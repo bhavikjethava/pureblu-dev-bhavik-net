@@ -18,7 +18,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
   useEffect(() => {
     inputRefs.current[0]!.focus();
   }, []);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>(
+  const inputRefs = useRef<(any)[]>(
     Array(otpLength).fill(null)
   );
 
