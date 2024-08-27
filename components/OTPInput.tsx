@@ -79,7 +79,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
               updateOTP(e.target.value, index)
             }
             onKeyDown={(e) => handleKeyPress(e, index)}
-            ref={(input) => (inputRefs.current[index] = input)}
+            ref={(input) => inputRefs.current[index] = input}
             className='h-14 w-14 text-center'
           />
         ))}
