@@ -16,7 +16,7 @@ function Home() {
     const isAuth = await getClientCookie(AUTH.PBPARTNER);
     if (isAuth) {
       // router.push(FALLBACKSITE);
-      router.push(`/${ROUTES.PBPARTNER}/${DASHBOARD_ROUTE}`);
+      router.push(`/${ROUTES.PBPARTNER}${DASHBOARD_ROUTE}`);
     } else {
       router.push(FALLBACKLOGIN);
     }
