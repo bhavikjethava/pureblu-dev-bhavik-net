@@ -31,6 +31,6 @@ export const LogoImg: React.FC<LogoProps> = ({ alt }) => {
 
 export const Logo: React.FC<LogoProps> = ({ className = 'text-primary ' }) => {
   return (
-    <h2 className={`flex text-2xl font-semibold ${className}`}>Pureblu</h2>
+    <h2 className={`flex text-2xl font-semibold ${className}`}>Pureblu - Testing</h2>
   );
 };
