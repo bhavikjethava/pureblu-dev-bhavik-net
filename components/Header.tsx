@@ -21,6 +21,7 @@ import { DataContext } from '@/context/dataProvider';
 import ROUTES, {
   AUTH,
   HELPERSDATA,
+  checkUserAuthorization,
   fetchHelperData,
   getAuthKeyFromPath,
   getBaseUrl,
@@ -28,6 +29,7 @@ import ROUTES, {
 import Image from 'next/image';
 import { HEADERDATA } from '@/utils/utils';
 import { useCookies } from 'next-client-cookies';
+import { getClientCookie } from '@/utils/cookieUtils';
 
 // Add the `className` prop to the HeaderProps interface
 interface HeaderProps {
@@ -65,6 +67,10 @@ const Header: React.FC<HeaderProps> = ({ className = 'bg-pbHeaderRed' }) => {
   };
 
   useEffect(() => {
+    checkAuthorizationWithoutMiddleware();  
+  }, []);
+
+  useEffect(() => {
     // Check if user data is in localStorage
     const storedUserData = localStorage.getItem(`${type}_user_info`);
     if (storedUserData) {
@@ -79,6 +85,32 @@ const Header: React.FC<HeaderProps> = ({ className = 'bg-pbHeaderRed' }) => {
     }
     fetchHelper();
   }, []);
+
+  const checkAuthorizationWithoutMiddleware = async () => {
+    // check authentication
+    let isAuthenticated = await getClientCookie(AUTH.PBPARTNER);
+    const basePath = getBaseUrl(pathname);
+    switch (basePath) {
+      case ROUTES.PBADMIN: {
+        isAuthenticated = await getClientCookie(AUTH.PBADMIN);
+        break;
+      }
+      case ROUTES.PBPARTNER: {
+        isAuthenticated = await getClientCookie(AUTH.PBPARTNER);
+        break;
+      }
+      case ROUTES.PBENTERPRISE: {
+        isAuthenticated = await getClientCookie(AUTH.PBENTERPRISE);
+        break;
+      }
+      case ROUTES.ENTERPRISE: {
+        isAuthenticated = await getClientCookie(AUTH.ENTERPRISE);
+        break;
+      }
+    }
+
+    checkUserAuthorization(isAuthenticated, basePath, pathname, router)
+  };
 
   const fetchHelper = async () => {
     const helperData = await fetchHelperData(apiAction);

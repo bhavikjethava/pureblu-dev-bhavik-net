@@ -422,3 +422,53 @@ export const getBaseRoute = ({ basePath, ROUTES }: any) => {
 
   return baseRoute;
 };
+
+export const DASHBOARD_ROUTE = '/dashboard';
+export const LOGIN_ROUTE = '/login';
+
+export const checkUserAuthorization = (
+  isAuthenticated: string | null,
+  basePath: string,
+  pathName: string,
+  router: any
+) => {
+  // Include all subroutes under DASHBOARD_ROUTE as protected routes
+  const protectedRoutes = [
+    `/${basePath}${DASHBOARD_ROUTE}/*`,
+    `/${basePath}${DASHBOARD_ROUTE}`,
+  ];
+  // Define login routes
+  const loginRoutes = `/${basePath}${LOGIN_ROUTE}`;
+  try {
+    const isProtectedRoute = protectedRoutes.some((route) =>
+      pathName.startsWith(route)
+    );
+
+    // Already login then redirect to dashboard
+    if (isAuthenticated && pathName === loginRoutes) {
+      router.replace(`${basePath}${DASHBOARD_ROUTE}`);
+    }
+
+    // if user enter base url then redirect login and dashbord
+    else if (
+      pathName == `/${ROUTES.PBADMIN}` ||
+      pathName == `/${ROUTES.PBPARTNER}` ||
+      pathName == `/${ROUTES.PBENTERPRISE}` ||
+      pathName == `/${ROUTES.ENTERPRISE}`
+    ) {
+      if (isAuthenticated) {
+        router.replace(`${basePath}${DASHBOARD_ROUTE}`);
+      } else {
+        router.replace(`${basePath}${LOGIN_ROUTE}`);
+      }
+    }
+
+    // user enter Procted and not login then redirect to login
+    else if (!isAuthenticated && isProtectedRoute) {
+      router.replace(`/${basePath}${LOGIN_ROUTE}`);
+    } 
+  } catch (error) {
+    console.error(error);
+    // Handle the error appropriately
+  }
+};

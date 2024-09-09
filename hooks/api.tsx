@@ -117,10 +117,9 @@ export const useApiResource = (queryKey: string, endpoint: string) => {
         );
         // setClientCookie('authToken', data.data.token_info.access_token);
         await handleLogin(type, data.data.token_info.access_token);
+        const dynamicURL = `/${basePath}/dashboard`;
+        router.push(dynamicURL);
       }
-
-      const dynamicURL = `/${basePath}/dashboard`;
-      router.push(dynamicURL);
     },
     onError: (error: any) => {
       showToast({

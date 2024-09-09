@@ -1,8 +1,8 @@
 'use client';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { getClientCookie } from '@/utils/cookieUtils';
-import { AUTH, FALLBACKLOGIN, FALLBACKSITE } from '@/utils/utils';
+import ROUTES, { AUTH, DASHBOARD_ROUTE, FALLBACKLOGIN, FALLBACKSITE } from '@/utils/utils';
 
 function Home() {
   const router = useRouter();
@@ -15,7 +15,8 @@ function Home() {
   const checkAuthorization = async () => {
     const isAuth = await getClientCookie(AUTH.PBPARTNER);
     if (isAuth) {
-      router.push(FALLBACKSITE);
+      // router.push(FALLBACKSITE);
+      router.push(`${ROUTES.PBPARTNER}/${DASHBOARD_ROUTE}`);
     } else {
       router.push(FALLBACKLOGIN);
     }
