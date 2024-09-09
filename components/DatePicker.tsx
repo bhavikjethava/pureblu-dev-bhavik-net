@@ -18,6 +18,7 @@ interface DatepickerProps {
   placeholderText?: string;
   size?: 'sm' | 'md' | 'lg'; // Add size prop to control the size of input/select
   isRequired?: boolean;
+  [Key: string]: any
 }
 
 const DatepickerComponent: React.FC<DatepickerProps> = ({

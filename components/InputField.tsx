@@ -113,7 +113,7 @@ const InputField: React.FC<InputFieldProps> = ({
             disabled={disabled}
             className={`flex min-h-24 w-full rounded-md border  border-input px-3 py-2 text-sm file:border-0  file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:border-black focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-[#eeeeee] disabled:opacity-80 ${
               error ? 'border-pbRed' : ''
-            } ${heightClass}`}
+            } ${size === 'md' ? 'min-h-10' : heightClass}`}
             {...rest}
           />
         ) : (

@@ -79,7 +79,7 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
   const [filterBranch, setFilterBranch] = useState<Array<OptionType>>([]);
   const [unitImage, setUnitImage] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState<number>(10); // State variable to control the number of records to display
-  const [machineModelList, setMachineModelList] = useState([]);
+  const [machineModelList, setMachineModelList] = useState<any>({});
   const [isConfirmation, setConfirmation] = useState(false);
   const [isDeleteUnitImage, setDeleteUnitImage] = useState(false);
   const [showPartnerDialog, setShowPartnerDialog] = useState(false);
@@ -97,6 +97,7 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
   const pathname = usePathname();
   const basePath = getBaseUrl(pathname);
   const isPBenterPrise = basePath == ROUTES.PBENTERPRISE;
+  const isPBPartner = basePath == ROUTES.PBPARTNER;
   const isEnterprise = basePath == ROUTES.ENTERPRISE;
   const { isAccess } = useAccessRights();
 
@@ -141,15 +142,23 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
 
   useEffect(() => {
     const filteredDeviceData = deviceList?.filter((item: any) => {
-      // Add filtering logic based on selectedBranchId
       const matchesBranchId =
         selectedBranchId === -1 || item.branch_id === selectedBranchId;
-      // Add existing search term filtering logic
-      const matchesSearchTerm = Object.values(
-        item as { [key: string]: unknown }
-      ).some((value) =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
+      const parentFields = Object.values(item);
+      const nestedFields = [
+        item.branch?.name,
+        item.brand?.name,
+        item.machine_variant?.name,
+        ...item.units?.map((unit: any) => unit.serial_number),
+        ...item.units?.map((unit: any) => unit.machine_model?.model_number),
+      ];
+      const searchableFields = [...parentFields, ...nestedFields];
+      const matchesSearchTerm = searchableFields.some((value) =>
+        String(value || '')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       );
+
       return matchesBranchId && matchesSearchTerm;
     });
 
@@ -159,7 +168,11 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
 
   useEffect(() => {
     if (isPBenterPrise) {
-      setPartnerList(state?.[PARTNERS]);
+      const _partnerList: any = state?.[PARTNERS];
+      if (_partnerList?.findIndex((x: any) => x.id == 0) < 0) {
+        _partnerList.unshift({ id: 0, name: 'No partner' });
+      }
+      setPartnerList(_partnerList);
     }
   }, [state?.[PARTNERS]]);
 
@@ -169,8 +182,8 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
     }
   }, []);
 
-  const onBrandChange = (brandId: number) => {
-    fetchMachineModelList(brandId);
+  const onBrandChange = (brandId: number, unitIndex: number) => {
+    fetchMachineModelList(brandId, unitIndex);
   };
 
   const fetchPartner = async () => {
@@ -189,7 +202,7 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
     }
   };
 
-  const fetchMachineModelList = async (brandId: number) => {
+  const fetchMachineModelList = async (brandId: number, unitIndex: number) => {
     try {
       const fetchMachineType = {
         endpoint: `${apiBaseUrl.MACHINEMODEL}?need_all=1&brand_id=${brandId}`,
@@ -203,7 +216,10 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
           { id: 0, model_number: 'NA' },
           ...data,
         ];
-        setMachineModelList(updatedMachineModelList);
+        setMachineModelList((prev: any) => ({
+          ...prev,
+          [unitIndex]: updatedMachineModelList,
+        }));
       }
     } catch (error) {
       console.error('Failed to fetch resource:', error);
@@ -384,17 +400,17 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
   ) => {
     setselectedUnitData((prevData) => ({ ...prevData, [key]: newValue }));
     if (key === 'brand_id') {
-      fetchMachineModelList(newValue);
+      fetchMachineModelList(newValue, unitIndex);
     }
   };
 
-  const handleUnitEditClick = (unit: any) => {
+  const handleUnitEditClick = (unit: any, unitIndex: number) => {
     setselectedUnitData(unit);
     setEditMode(!editMode);
     if (unit?.brand_id) {
-      fetchMachineModelList(unit?.brand_id);
+      fetchMachineModelList(unit?.brand_id, unitIndex);
     } else {
-      setMachineModelList([]);
+      setMachineModelList({});
     }
     //
   };
@@ -533,7 +549,11 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
   };
 
   const onAddPartner = (device: any) => {
-    setSelectedDevice(device);
+    setSelectedDevice({
+      partner_id: device?.device_assign_partner?.partner_id,
+      ...device,
+    });
+
     setShowPartnerDialog(true);
   };
 
@@ -554,7 +574,7 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
         endpoint: `${apiBaseUrl.CUSTOMERS}/${id}/device/${selectedDevice?.id}/assign-device`,
         method: 'POST',
         body: {
-          partner_id,
+          ...(partner_id == 0 ? { remove_partner: 1 } : { partner_id }),
         },
       };
 
@@ -614,14 +634,14 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
   };
 
   return (
-    <div className='flex h-full flex-grow flex-col p-6 md:p-5'>
-      <div className='flex h-full flex-col gap-5'>
+    <div className='flex  flex-grow flex-col p-6 md:p-5'>
+      <div className='flex flex-col gap-5'>
         <div className='grid w-full grid-cols-1 gap-5 rounded-md bg-white p-5  lg:grid-cols-9 lg:gap-10'>
           <div className='lg:col-span-3'>
             <SearchInput
               value={searchTerm}
               onChange={setSearchTerm}
-              placeholder='Name (Min 3 character) or Contact no (full) or ID'
+              placeholder='Name (Min 3 character) or Contact no (full) or ID or Branch name or Brand name or Serial no or Variant or Model number'
             />
           </div>
           <div className='lg:col-span-3'>
@@ -667,16 +687,16 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
                             value={`main-item-${deviceIndex}`}
                             className='rounded-md border-none bg-white px-4 no-underline'
                           >
-                            <AccordionTrigger className='text-left hover:no-underline'>
+                            <AccordionTrigger className='text-left hover:no-underline select-text'>
                               <div className='grid w-full grid-cols-3 items-center justify-between pr-5 '>
-                                <div className='flex items-center gap-5 text-sm font-bold capitalize'>
+                                <div className='flex items-center gap-5 text-sm font-bold capitalize cursor-text'>
                                   <span
                                     className={`h-3 w-3 rounded-full`}
                                     style={{ backgroundColor: className }}
                                   ></span>
                                   {`${device?.id} - ${device?.name?.toLowerCase()}`}
                                 </div>
-                                <div className='capitalize'>
+                                <div className='capitalize '>
                                   {device?.branch?.name}
                                 </div>
                               </div>
@@ -700,19 +720,21 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
                                       {device?.machine_type?.name || 'Na'}
                                     </span>
                                   </div>
-                                  {device?.installed_on && (
-                                    <div className='grid grid-cols-2'>
-                                      <div className='text-sm font-bold'>
-                                        Installed On
-                                      </div>
-                                      <span className=''>
-                                        {' '}
-                                        {moment(device?.installed_on).format(
-                                          'YYYY-MM-DD'
-                                        )}
-                                      </span>
+                                  {/* {device?.installed_on && ( */}
+                                  <div className='grid grid-cols-2'>
+                                    <div className='text-sm font-bold'>
+                                      Installed On
                                     </div>
-                                  )}
+                                    <span className=''>
+                                      {' '}
+                                      {device?.installed_on
+                                        ? moment(device?.installed_on).format(
+                                            'YYYY-MM-DD'
+                                          )
+                                        : '-'}
+                                    </span>
+                                  </div>
+                                  {/* )} */}
                                 </div>
                                 <div className='col-span-4 grid gap-4'>
                                   <div className='grid grid-cols-2'>
@@ -740,29 +762,34 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
                                     </div>
                                   ) : null}
                                 </div>
-                                {state?.[CUSTOMER]?.is_enterprise === 2 && (
-                                  <div className='col-span-4 flex justify-end gap-4'>
-                                    <Button
-                                      className='p-3'
-                                      onClick={() =>
-                                        handleDeviceEditClick(device)
-                                      }
-                                    >
-                                      <IconPencil className='h-5 w-5' />
-                                    </Button>
-                                    {isAccess && (
+                                {(!isPBPartner ||
+                                  state?.[CUSTOMER]?.is_enterprise === 2) &&
+                                  !isEnterprise && (
+                                    <div className='col-span-4 flex justify-end gap-4'>
                                       <Button
                                         className='p-3'
-                                        variant={'destructive'}
                                         onClick={() =>
-                                          handleDeleteDeviceClick(device, null)
+                                          handleDeviceEditClick(device)
                                         }
                                       >
-                                        <IconDeleteBinLine className='h-5 w-5' />
+                                        <IconPencil className='h-5 w-5' />
                                       </Button>
-                                    )}
-                                  </div>
-                                )}
+                                      {isAccess && (
+                                        <Button
+                                          className='p-3'
+                                          variant={'destructive'}
+                                          onClick={() =>
+                                            handleDeleteDeviceClick(
+                                              device,
+                                              null
+                                            )
+                                          }
+                                        >
+                                          <IconDeleteBinLine className='h-5 w-5' />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
                               </div>
                               <Accordion type='single' collapsible>
                                 {device?.units &&
@@ -866,9 +893,12 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
                                                 useCustomStyle={true}
                                                 error={errors?.serial_number}
                                               />
+
                                               <EditableField
                                                 label='Model Number :'
-                                                options={machineModelList}
+                                                options={
+                                                  machineModelList?.[unitIndex]
+                                                }
                                                 optionKey='id' // Set the key for options
                                                 optionValue='model_number' // Set the value for options
                                                 selectedValue={
@@ -897,7 +927,7 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
                                                     newValue
                                                   )
                                                 }
-                                                type='dropdown'
+                                                type='autocomplete_dropdown'
                                                 error={errors?.machine_model_id}
                                               />
 
@@ -1184,231 +1214,236 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
                                                 error={errors?.note}
                                               />
                                             </div>
-                                            {state?.[CUSTOMER]
-                                              ?.is_enterprise === 2 && (
-                                              <div className='col-span-12 flex flex-wrap items-end justify-end gap-4 xl:col-span-2'>
-                                                {editMode ? (
-                                                  <>
-                                                    {' '}
-                                                    <Button
-                                                      className='min-w-[80px] p-3'
-                                                      size={'sm'}
-                                                      disabled={loading}
-                                                      icon={
-                                                        loading ? (
-                                                          <IconLoading />
-                                                        ) : (
-                                                          ''
-                                                        )
-                                                      }
-                                                      onClick={() =>
-                                                        handleSaveDevicesUnit(
-                                                          unit.id,
-                                                          device.id
-                                                        )
-                                                      }
-                                                    >
-                                                      Save{' '}
-                                                    </Button>
-                                                    <Button
-                                                      className='min-w-[80px] p-3'
-                                                      variant={'outline'}
-                                                      size={'sm'}
-                                                      onClick={() =>
-                                                        setEditMode(false)
-                                                      }
-                                                    >
-                                                      Cancel
-                                                    </Button>
-                                                  </>
-                                                ) : (
-                                                  <>
-                                                    {' '}
-                                                    <Button
-                                                      className='p-2'
-                                                      onClick={() =>
-                                                        handleUnitEditClick(
-                                                          unit
-                                                        )
-                                                      }
-                                                      size={'sm'}
-                                                    >
-                                                      <IconPencil className='h-5 w-5' />
-                                                    </Button>
-                                                    {isAccess && (
+                                            {(!isPBPartner ||
+                                              state?.[CUSTOMER]
+                                                ?.is_enterprise === 2) &&
+                                              !isEnterprise && (
+                                                <div className='col-span-12 flex flex-wrap items-end justify-end gap-4 xl:col-span-2'>
+                                                  {editMode ? (
+                                                    <>
+                                                      {' '}
                                                       <Button
-                                                        className='p-2'
-                                                        variant={'destructive'}
+                                                        className='min-w-[80px] p-3'
                                                         size={'sm'}
+                                                        disabled={loading}
+                                                        icon={
+                                                          loading ? (
+                                                            <IconLoading />
+                                                          ) : (
+                                                            ''
+                                                          )
+                                                        }
                                                         onClick={() =>
-                                                          handleDeleteDeviceClick(
-                                                            device,
-                                                            unit
+                                                          handleSaveDevicesUnit(
+                                                            unit.id,
+                                                            device.id
                                                           )
                                                         }
                                                       >
-                                                        <IconDeleteBinLine className='h-5 w-5' />
+                                                        Save{' '}
                                                       </Button>
-                                                    )}
-                                                  </>
-                                                )}
-                                              </div>
-                                            )}
+                                                      <Button
+                                                        className='min-w-[80px] p-3'
+                                                        variant={'outline'}
+                                                        size={'sm'}
+                                                        onClick={() =>
+                                                          setEditMode(false)
+                                                        }
+                                                      >
+                                                        Cancel
+                                                      </Button>
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      {' '}
+                                                      <Button
+                                                        className='p-2'
+                                                        onClick={() =>
+                                                          handleUnitEditClick(
+                                                            unit,
+                                                            unitIndex
+                                                          )
+                                                        }
+                                                        size={'sm'}
+                                                      >
+                                                        <IconPencil className='h-5 w-5' />
+                                                      </Button>
+                                                      {isAccess && (
+                                                        <Button
+                                                          className='p-2'
+                                                          variant={
+                                                            'destructive'
+                                                          }
+                                                          size={'sm'}
+                                                          onClick={() =>
+                                                            handleDeleteDeviceClick(
+                                                              device,
+                                                              unit
+                                                            )
+                                                          }
+                                                        >
+                                                          <IconDeleteBinLine className='h-5 w-5' />
+                                                        </Button>
+                                                      )}
+                                                    </>
+                                                  )}
+                                                </div>
+                                              )}
                                           </div>
                                         </AccordionContent>
                                       </AccordionItem>
                                     )
                                   )}
                               </Accordion>
-                            </AccordionContent>
-                            {device?.amc_registration?.amc_status === 1 ? (
-                              <Accordion type='single' collapsible>
-                                <AccordionItem
-                                  key={device?.amc_registration?.id}
-                                  value={`sub-item-${device?.amc_registration?.id}`}
-                                  className='mb-4 rounded-md border-none bg-white no-underline'
-                                >
-                                  {aMCInfoLoader && <Loader />}
-                                  <AccordionTrigger
-                                    className='bg-pbHeaderBlue px-4 text-left text-white hover:no-underline'
-                                    onClick={() =>
-                                      fetchAMcDetail(
-                                        device?.amc_registration?.id
-                                      )
-                                    }
+                              {device?.amc_registration?.amc_status === 1 ? (
+                                <Accordion type='single' collapsible>
+                                  <AccordionItem
+                                    key={device?.amc_registration?.id}
+                                    value={`sub-item-${device?.amc_registration?.id}`}
+                                    className='mb-4 rounded-md border bg-white no-underline'
                                   >
-                                    <div className='grid w-full grid-cols-3 items-center'>
-                                      <div className='col-span-1'>
-                                        <div className='text-sm font-bold'>
-                                          AMC Details
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent className='px-4'>
-                                    <>
-                                      <div className='mb-5 grid w-full grid-cols-8 gap-4'>
-                                        <div className='col-span-4 grid gap-4'>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Amc Plan :
-                                            </div>
-                                            <span className='uppercase'>
-                                              {amcInfo?.amc_plan?.amc_code}
-                                            </span>
-                                          </div>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Nos of Days :
-                                            </div>
-                                            <span className='capitalize'>
-                                              {amcInfo?.amc_plan?.no_of_days}
-                                            </span>
-                                          </div>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Amount :
-                                            </div>
-                                            <span className=''>
-                                              {amcInfo?.amount}
-                                            </span>
-                                          </div>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Final Amount :
-                                            </div>
-                                            <span className=''>
-                                              {+amcInfo?.amount -
-                                                +amcInfo?.discount}
-                                            </span>
-                                          </div>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Start Date :
-                                            </div>
-                                            <span className=''>
-                                              {amcInfo?.start_date}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <div className='col-span-4 grid gap-4'>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Amc Description :
-                                            </div>
-                                            <span className='capitalize'>
-                                              {
-                                                amcInfo?.amc_plan
-                                                  ?.amc_description
-                                              }
-                                            </span>
-                                          </div>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Services in Year :
-                                            </div>
-                                            <span className='capitalize'>
-                                              {
-                                                amcInfo?.amc_plan
-                                                  ?.services_in_year
-                                              }
-                                            </span>
-                                          </div>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Discount :
-                                            </div>
-                                            <span className='capitalize'>
-                                              {amcInfo?.discount}
-                                            </span>
-                                          </div>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              Status :
-                                            </div>
-                                            <span className='capitalize'>
-                                              {amcInfo?.is_active == 1
-                                                ? 'Active'
-                                                : 'Expired'}
-                                            </span>
-                                          </div>
-                                          <div className='grid grid-cols-2'>
-                                            <div className='text-sm font-bold'>
-                                              End Date :
-                                            </div>
-                                            <span className='capitalize'>
-                                              {amcInfo?.end_date}
-                                            </span>
+                                    {aMCInfoLoader && <Loader />}
+                                    <AccordionTrigger
+                                      className='px-4 text-left hover:no-underline'
+                                      onClick={() =>
+                                        fetchAMcDetail(
+                                          device?.amc_registration?.id
+                                        )
+                                      }
+                                    >
+                                      <div className='grid w-full grid-cols-3 items-center'>
+                                        <div className='col-span-1'>
+                                          <div className='text-sm font-bold'>
+                                            AMC Details
                                           </div>
                                         </div>
                                       </div>
-                                      <div className='mb-5 grid w-full grid-cols-8 gap-4'>
-                                        <div className='col-span-4 grid gap-4'>
-                                          <div className='grid grid-cols-2'>
-                                            <div className=' text-sm font-bold'>
-                                              Service Dates :
+                                    </AccordionTrigger>
+                                    <AccordionContent className='px-4'>
+                                      <>
+                                        <div className='mb-5 grid w-full grid-cols-8 gap-4'>
+                                          <div className='col-span-4 grid gap-4'>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Amc Plan :
+                                              </div>
+                                              <span className='uppercase'>
+                                                {amcInfo?.amc_plan?.amc_code}
+                                              </span>
                                             </div>
-                                            <ul className='grid grid-cols-2 gap-4'>
-                                              {amcInfo?.amc_service?.map(
-                                                (serviceInfo: any) => (
-                                                  <li key={serviceInfo?.id}>
-                                                    <span>
-                                                      {moment(
-                                                        serviceInfo?.service_date
-                                                      ).format('yyyy-MM-DD')}
-                                                    </span>
-                                                  </li>
-                                                )
-                                              )}
-                                            </ul>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Nos of Days :
+                                              </div>
+                                              <span className='capitalize'>
+                                                {amcInfo?.amc_plan?.no_of_days}
+                                              </span>
+                                            </div>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Amount :
+                                              </div>
+                                              <span className=''>
+                                                {amcInfo?.amount}
+                                              </span>
+                                            </div>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Final Amount :
+                                              </div>
+                                              <span className=''>
+                                                {+amcInfo?.amount -
+                                                  +amcInfo?.discount}
+                                              </span>
+                                            </div>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Start Date :
+                                              </div>
+                                              <span className=''>
+                                                {amcInfo?.start_date}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <div className='col-span-4 grid gap-4'>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Amc Description :
+                                              </div>
+                                              <span className='capitalize'>
+                                                {
+                                                  amcInfo?.amc_plan
+                                                    ?.amc_description
+                                                }
+                                              </span>
+                                            </div>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Services in Year :
+                                              </div>
+                                              <span className='capitalize'>
+                                                {
+                                                  amcInfo?.amc_plan
+                                                    ?.services_in_year
+                                                }
+                                              </span>
+                                            </div>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Discount :
+                                              </div>
+                                              <span className='capitalize'>
+                                                {amcInfo?.discount}
+                                              </span>
+                                            </div>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                Status :
+                                              </div>
+                                              <span className='capitalize'>
+                                                {amcInfo?.is_active == 1
+                                                  ? 'Active'
+                                                  : 'Expired'}
+                                              </span>
+                                            </div>
+                                            <div className='grid grid-cols-2'>
+                                              <div className='text-sm font-bold'>
+                                                End Date :
+                                              </div>
+                                              <span className='capitalize'>
+                                                {amcInfo?.end_date}
+                                              </span>
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    </>
-                                  </AccordionContent>
-                                </AccordionItem>
-                              </Accordion>
-                            ) : null}
+                                        <div className='mb-5 grid w-full grid-cols-8 gap-4'>
+                                          <div className='col-span-4 grid gap-4'>
+                                            <div className='grid grid-cols-2'>
+                                              <div className=' text-sm font-bold'>
+                                                Service Dates :
+                                              </div>
+                                              <ul className='grid grid-cols-2 gap-4'>
+                                                {amcInfo?.amc_service?.map(
+                                                  (serviceInfo: any) => (
+                                                    <li key={serviceInfo?.id}>
+                                                      <span>
+                                                        {moment(
+                                                          serviceInfo?.service_date
+                                                        ).format('yyyy-MM-DD')}
+                                                      </span>
+                                                    </li>
+                                                  )
+                                                )}
+                                              </ul>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                </Accordion>
+                              ) : null}
+                            </AccordionContent>
                           </AccordionItem>
                         </div>
                       );
@@ -1500,7 +1535,7 @@ const UnitDetails = ({ apiBaseUrl }: any) => {
           <div className='flex h-[85%] grow  flex-col p-5'>
             <SelectBox
               options={partnerList}
-              value={selectedDevice?.device_assign_partner?.partner_id}
+              value={selectedDevice?.partner_id}
               onChange={(e) => onPartnerChangeHandler('partner_id', e)}
               error={errors?.partner_id}
             />

@@ -385,7 +385,7 @@ tr:has(.pbYellow) {
   background-color: white;
   border: 1px solid #ccc; /* Adjust the color to match the design */
   border-radius: 4px; /* Rounded corners */
-  padding: 8px 12px; /* Adjust padding to match the design */
+  padding: 6px 12px; /* Adjust padding to match the design */
   color: #333; /* Adjust the text color */
   -webkit-appearance: none;
   appearance: none;

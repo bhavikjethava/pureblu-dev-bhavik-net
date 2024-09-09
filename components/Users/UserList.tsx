@@ -40,7 +40,7 @@ interface UserTypes {
 }
 
 function UserList({ apiBaseUrl }: any) {
-  const [selectedUser, setSelectedUser] = useState<UserTypes>();
+  const [selectedUser, setSelectedUser] = useState<UserTypes>({});
   const [filteredUserData, setFilteredUserData] = useState<UserTypes>();
   const [userList, setUserList] = useState<UserTypes | undefined>();
   const [helperData, setHelperData] = useState();
@@ -255,11 +255,11 @@ function UserList({ apiBaseUrl }: any) {
             value: selectedUser?.first_name,
             message: 'First Name',
           },
-          {
-            field: 'middle_name',
-            value: selectedUser?.middle_name,
-            message: 'Middle Name',
-          },
+          // {
+          //   field: 'middle_name',
+          //   value: selectedUser?.middle_name,
+          //   message: 'Middle Name',
+          // },
           {
             field: 'last_name',
             value: selectedUser?.last_name,
@@ -286,6 +286,9 @@ function UserList({ apiBaseUrl }: any) {
         if (isEdit) {
           apiMethod = 'PATCH';
           apiUrl += `/${selectedUser?.id}`;
+        }
+        if (!selectedUser?.middle_name) {
+          selectedUser.middle_name = null;
         }
 
         const data = {
@@ -361,7 +364,9 @@ function UserList({ apiBaseUrl }: any) {
   const handleAddAdminClick = () => {
     // Logic to open the AddAdmin modal
     setShowAddUserModal(true);
+    setErrors({});
     setSelectedUser({
+      role_id: 2,
       roles: [],
       isNew: true,
     });

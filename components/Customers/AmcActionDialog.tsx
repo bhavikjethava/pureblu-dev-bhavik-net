@@ -98,7 +98,7 @@ const AmcActionDialog: FC<AmcActionDialogProps> = ({
   return (
     <MyDialog
       open={open}
-      onClose={onClose}
+      onClose={() => onClose?.()}
       title={isViewSelectedDevice ? 'AMC Devices' : 'Cancel Amc'}
       ClassName='sm:max-w-[90%]'
       buttons={

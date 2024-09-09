@@ -1,3 +1,4 @@
+'use client';
 import TechnicianExportReport from '@/components/TechnicianExportReport';
 import {
   API_ENDPOINTS_ENTERPRISE,

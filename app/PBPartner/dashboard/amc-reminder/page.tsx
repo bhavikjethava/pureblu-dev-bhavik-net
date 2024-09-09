@@ -1,3 +1,4 @@
+'use client';
 import AmcReminderList from '@/components/AMCReminderList';
 import { API_ENDPOINTS_PARTNER } from '@/utils/apiConfig';
 

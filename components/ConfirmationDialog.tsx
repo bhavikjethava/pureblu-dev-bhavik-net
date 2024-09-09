@@ -30,6 +30,7 @@ interface ButtonConfig {
   onClick?: (newData: any) => void;
   icon?: ReactNode;
   btnLoading?: boolean;
+  disabled?: boolean;
 }
 
 interface ConfirmationDialogProps {
@@ -69,7 +70,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               variant={button.variant}
               onClick={button.onClick}
               icon={button.icon}
-              disabled={button?.btnLoading}
+              disabled={button?.btnLoading || button?.disabled}
               className='min-w-[100px]'
             >
               {button.text}

@@ -12,7 +12,7 @@ import { useParams, usePathname } from 'next/navigation';
 import { userInfo } from 'os';
 import TableComponent from '../Table';
 import { Button } from '../ui/button';
-import { IconLoading } from '@/utils/Icons';
+import { IconBxErrorCircle, IconLoading } from '@/utils/Icons';
 import CheckboxItem from '../CheckboxItem';
 import { validateForm } from '@/utils/FormValidationRules';
 import { apiCall } from '@/hooks/api';
@@ -23,6 +23,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import DatepickerComponent from '../DatePicker';
 import { ScrollArea } from '../ui/scroll-area';
+import { showToast } from '../Toast';
+import moment from 'moment';
 
 interface AddNoteProps {
   isShow: boolean;
@@ -99,6 +101,14 @@ const AddNote: FC<AddNoteProps> = ({
     const { note, is_reminder } = formData;
     const valifationRules = [{ field: 'note', value: note, message: 'Note' }];
     let { isError, errors } = validateForm(valifationRules);
+
+    const currentDate = new Date();
+    if (selectedDate <= currentDate && is_reminder) {
+      errors['reminderDateTime'] =
+        'Reminder DateTime must be greater than or equal to current date and time.';
+      isError = true;
+    }
+
     if (isError) {
       setErrors(errors);
     } else {
@@ -154,7 +164,13 @@ const AddNote: FC<AddNoteProps> = ({
       accessorKey: 'reminder_date_time',
       header: 'Reminder Date',
       // render: (item: any) => <span>{format(item?.reminder_date_time, 'dd-MM-yyy hh:mm')}</span>,
-      render: (item: any) => <span>{item?.reminder_date_time || '-'}</span>,
+      render: (item: any) => (
+        <span>
+          {item?.reminder_date_time
+            ? moment(item?.reminder_date_time).format('DD-MM-yyy HH:mm')
+            : '-'}
+        </span>
+      ),
     },
     { accessorKey: 'note', header: 'Note' },
     { accessorKey: 'created_at', header: 'Date' },
@@ -167,7 +183,7 @@ const AddNote: FC<AddNoteProps> = ({
       accessorKey: 'reminder_sent',
       header: 'Reminder Sent',
       render: (item: any) => (
-        <span>{item?.is_reminder == 1 ? 'Yes' : 'No'}</span>
+        <span>{item?.is_reminder == 1 ? 'No' : 'Yes'}</span>
       ),
     },
   ];
@@ -177,11 +193,20 @@ const AddNote: FC<AddNoteProps> = ({
       open={isShow}
       onClose={onClose}
       title='Add Note'
-      ClassName='sm:max-w-[90%] h-full grow max-h-[80%]'
+      ClassName='sm:max-w-[90%] h-full grow max-h-[90%]'
+      buttons={[
+        {
+          text: 'Save',
+          variant: 'blue',
+          size: 'sm',
+          onClick: onSaveClick,
+          icon: isLoading ? <IconLoading /> : '',
+        },
+      ]}
     >
       <ScrollArea className='flex h-full grow flex-col'>
         <div className='flex grow  flex-col overflow-auto p-6'>
-          <div className='flex flex-col gap-5 pb-5'>
+          <div className='flex flex-col gap-3 pb-5'>
             <div className='grid grid-cols-3 gap-4'>
               <div className='md:grid-cols-1'>
                 <label className='mb-2 block font-bold'>Note:</label>
@@ -192,58 +217,70 @@ const AddNote: FC<AddNoteProps> = ({
                   value={formData?.note || ''}
                   onChange={(e) => handleInputChange('note', e)}
                   error={errors?.note || ''}
+                  size='md'
                 />
               </div>
             </div>
-            <div className='grid grid-cols-3 gap-4'>
-              <div className='grid-cols-1'>
-                <label className='mb-2 block font-bold'>Added By:</label>
+
+            <div className='grid min-h-10 grid-cols-3 items-center gap-4'>
+              <div className=' flex grid-cols-3 gap-4'>
+                <label className='block whitespace-nowrap font-bold'>
+                  Added By:
+                </label>
+                <div className='col-span-2 grid-cols-2 font-normal'>
+                  <div>
+                    {type == AUTH.PBADMIN ||
+                    type == AUTH.PBENTERPRISE ||
+                    type === AUTH.ENTERPRISE
+                      ? userData?.name
+                      : `${userData?.full_name || ''}`}
+                  </div>
+                </div>
               </div>
-              <div className='col-span-2 grid-cols-2 font-bold'>
-                <div>
-                  {type == AUTH.PBADMIN ||
-                  type == AUTH.PBENTERPRISE ||
-                  type === AUTH.ENTERPRISE
-                    ? userData?.name
-                    : `${userData?.full_name || ''}`}
+              <div className='col-span-2 grid grid-cols-4 items-center'>
+                <div className='col-span-1 '>
+                  <CheckboxItem
+                    key='send_reminder'
+                    checked={formData?.is_reminder}
+                    onCheckedChange={(checked) =>
+                      handleInputChange('is_reminder', checked)
+                    }
+                    ariaLabel='Send Reminder'
+                    id={`send_reminder`}
+                  />
+                </div>
+                <div className='col-span-3 grid grid-cols-1 items-center gap-4'>
+                  {formData.is_reminder ? (
+                    <>
+                      {/* <div className='grid-cols-1'>
+                        <label className=' block font-bold'>
+                          Reminder DateTime:
+                        </label>
+                      </div> */}
+                      <div className='z-40 col-span-1 grid-cols-2 '>
+                        <DatepickerComponent
+                          showTimeSelect
+                          minDate={new Date()}
+                          maxTime={new Date().setHours(23, 59, 59, 999)}
+                          minTime={new Date()}
+                          selectedDate={selectedDate}
+                          onChange={(date) => {
+                            setSelectedDate(date || new Date());
+                            setErrors((prev) => ({
+                              ...prev,
+                              reminderDateTime: '',
+                            }));
+                          }}
+                          dateFormat='dd/MM/yyyy h:mm aa'
+                          error={errors?.reminderDateTime}
+                        />
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </div>
-            <div className='grid grid-cols-3 gap-4'>
-              <div className='col-start-2'>
-                <CheckboxItem
-                  key='send_reminder'
-                  checked={formData?.is_reminder}
-                  onCheckedChange={(checked) =>
-                    handleInputChange('is_reminder', checked)
-                  }
-                  ariaLabel='Send Reminder'
-                  id={`send_reminder`}
-                />
-              </div>
-            </div>
-            <div className='grid grid-cols-3 gap-4'>
-              {formData.is_reminder ? (
-                <>
-                  <div className='grid-cols-1'>
-                    <label className='mb-2 block font-bold'>
-                      Reminder DateTime:
-                    </label>
-                  </div>
-                  <div className='z-40 col-span-2 grid-cols-2 '>
-                    <DatepickerComponent
-                      showTimeSelect
-                      minDate={
-                        new Date(new Date().getTime() + 24 * 60 * 60 * 1000)
-                      }
-                      selectedDate={selectedDate}
-                      onChange={(date) => setSelectedDate(date || new Date())}
-                      dateFormat='dd/MM/yyyy h:mm aa'
-                    />
-                  </div>
-                </>
-              ) : null}
-            </div>
+{/* 
             <div className='grid grid-cols-3 gap-4'>
               <div className='col-start-2'>
                 <Button
@@ -255,7 +292,7 @@ const AddNote: FC<AddNoteProps> = ({
                   Save
                 </Button>
               </div>
-            </div>
+            </div> */}
           </div>
           <TableComponent columns={columnsData} data={notes} />
         </div>

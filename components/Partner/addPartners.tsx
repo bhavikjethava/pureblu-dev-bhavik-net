@@ -10,7 +10,13 @@ import CountrySelectBox from '@/components/CountrySelectBox';
 import { API_ENDPOINTS, API_ENDPOINTS_PARTNER } from '@/utils/apiConfig';
 import { apiCall, useApiResource, useStateCity } from '@/hooks/api';
 import { useMutation } from 'react-query';
-import { ACTIVETECHNICITION, AUTH, CITY, HELPERSDATA, STATE } from '@/utils/utils';
+import {
+  ACTIVETECHNICITION,
+  AUTH,
+  CITY,
+  HELPERSDATA,
+  STATE,
+} from '@/utils/utils';
 import Image from 'next/image';
 import { IconLoading } from '@/utils/Icons';
 import { VALIDATIONTYPE, validateForm } from '@/utils/FormValidationRules';
@@ -85,7 +91,7 @@ const AddPartner: React.FC<AddPartnersProps> = ({
   const apiAction = useMutation(apiCall);
   const { stateList, cityList, setStateList, setCityList, fetchRequest } =
     useStateCity();
-    const { state } = useContext(DataContext);
+  const { state } = useContext(DataContext);
 
   useEffect(() => {
     if (data?.id != undefined) {
@@ -137,11 +143,11 @@ const AddPartner: React.FC<AddPartnersProps> = ({
       const valifationRules: any = [
         { field: 'name', value: name, message: 'Partner Name' },
         { field: 'user.first_name', value: first_name, message: 'First Name' },
-        {
-          field: 'user.middle_name',
-          value: middle_name,
-          message: 'Middle Name',
-        },
+        // {
+        //   field: 'user.middle_name',
+        //   value: middle_name,
+        //   message: 'Middle Name',
+        // },
         { field: 'user.last_name', value: last_name, message: 'Last Name' },
         {
           field: 'user.email',
@@ -154,7 +160,7 @@ const AddPartner: React.FC<AddPartnersProps> = ({
           value: phone,
           message: 'Mobile No.',
           type: VALIDATIONTYPE.ISPHONE,
-          phoneLength: country_id == 200 ? 9 : 10
+          phoneLength: country_id == 200 ? 9 : 10,
         },
         { field: 'user.address_1', value: address_1, message: 'Address 1' },
         { field: 'user.address_2', value: address_2, message: 'Address 2' },
@@ -226,6 +232,7 @@ const AddPartner: React.FC<AddPartnersProps> = ({
             key == 'state' ||
             key == 'city' ||
             key == 'user' ||
+            (key == 'user[middle_name]' && !formData[key]) ||
             (isEdit && key == 'logo' && !(formData?.logo instanceof File)) ||
             (isEdit && key == 'public_number' && formData[key] == null)
           )
@@ -355,7 +362,7 @@ const AddPartner: React.FC<AddPartnersProps> = ({
             <InputField
               type='text'
               label='Middle Name'
-              isRequired
+              // isRequired
               value={formData?.['user[middle_name]'] || ''}
               onChange={(e) => handleInputChange('user[middle_name]', e)}
               error={formErrors?.['user.middle_name'] || ''}

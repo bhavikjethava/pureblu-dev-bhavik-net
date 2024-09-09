@@ -1,17 +1,25 @@
 import { handleLogout } from '@/app/actions';
 import {
+  IconAccountArrowDown,
   IconAddCircleOutline,
+  IconAlarm,
   IconBxErrorCircle,
   IconCalendarDays,
+  IconCalendarPreviousDate,
+  IconChecklist,
   IconClipboard,
   IconCopy,
+  IconDashboard,
   IconDatabaseBackup,
+  IconEvent,
   IconGroup,
+  IconImport,
   IconLogOut,
   IconMapPin,
   IconNoteText,
   IconQuestionCircle,
   IconSetting,
+  IconUserAdd,
   IconUsers,
   IconWrench,
 } from './Icons';
@@ -30,7 +38,9 @@ const logout = async () => {
     const type = getAuthKeyFromPath(window.location.pathname);
     localStorage.removeItem(`${type}_user_info`);
     await handleLogout(basePath);
-    window.location.replace(`/${basePath}/login`);
+    setTimeout(() => {
+      window.location.replace(`/${basePath}/login`);
+    }, 500);
   }
 };
 
@@ -38,7 +48,7 @@ const PBAdminMenu = [
   {
     label: MENUITEM.COMPLAINTS,
     href: ROUTES.DASHBOARD,
-    icon: <IconClipboard className='h-5 w-5' />,
+    icon: <IconDashboard className='h-5 w-5' />,
   },
   {
     label: MENUITEM.CUSTOMERS,
@@ -63,7 +73,7 @@ const PBAdminMenu = [
   {
     label: 'Add New Users',
     href: ROUTES.ADD_USERS,
-    icon: <IconAddCircleOutline className='h-5 w-5' />,
+    icon: <IconUserAdd className='h-5 w-5' />,
   },
   {
     label: MENUITEM.USER_TYPE,
@@ -200,7 +210,7 @@ const PBPartnerMenu = [
   {
     label: 'Dashboard',
     href: ROUTES.DASHBOARD,
-    icon: <IconClipboard className='h-5 w-5' />,
+    icon: <IconDashboard className='h-5 w-5' />,
   },
   {
     label: 'Map View',
@@ -225,17 +235,17 @@ const PBPartnerMenu = [
   {
     label: 'AMC Reminder',
     href: ROUTES.AMC_REMINDER,
-    icon: <IconSetting className='h-5 w-5' />,
+    icon: <IconAlarm className='h-5 w-5' />,
   },
   {
     label: 'AMC Plans',
     href: ROUTES.AMC_PLANS,
-    icon: <IconSetting className='h-5 w-5' />,
+    icon: <IconChecklist className='h-5 w-5' />,
   },
   {
     label: 'Add New Admin',
     href: ROUTES.ADD_USERS,
-    icon: <IconClipboard className='h-6 w-6' />,
+    icon: <IconUserAdd className='h-5 w-5' />,
   },
   {
     label: 'User Type',
@@ -245,22 +255,23 @@ const PBPartnerMenu = [
   {
     label: 'Preventive Services',
     href: ROUTES.PREVENTIVE_SERVICES,
-    icon: <IconSetting className='h-5 w-5' />,
+    icon: <IconEvent className='h-5 w-5' />,
   },
   {
     label: 'Past Complaints',
     href: ROUTES.PAST_COMPLAINTS,
-    icon: <IconClipboard className='h-5 w-5' />,
+    icon: <IconCalendarPreviousDate className='h-5 w-5' />,
+  },
+  
+  {
+    type: 'separator',
+    label: '',
+    href: '#',
   },
   {
     label: 'Service Report',
     href: ROUTES.MANAGE_SERVICE_REPORT,
     icon: <IconNoteText className='h-5 w-5' />,
-  },
-  {
-    type: 'separator',
-    label: '',
-    href: '#',
   },
   {
     label: 'Admin Report',
@@ -285,7 +296,7 @@ const PBPartnerMenu = [
   {
     label: MENUITEM.IMPORT_CUSTOMER,
     href: ROUTES.IMPORT_CUSTOMER,
-    icon: <IconGroup className='h-5 w-5' />,
+    icon: <IconAccountArrowDown className='h-6 w-6' />,
   },
   {
     label: MENUITEM.IMPORT_TECHNICIANS,
@@ -295,7 +306,7 @@ const PBPartnerMenu = [
   {
     label: MENUITEM.IMPORT_DERVICE,
     href: ROUTES.IMPORT_DEVICES,
-    icon: <IconSetting className='h-5 w-5' />,
+    icon: <IconImport className='h-5 w-5' />,
   },
   {
     type: 'separator',
@@ -342,7 +353,7 @@ const PBEnterprise = [
   {
     label: 'Dashboard',
     href: ROUTES.DASHBOARD,
-    icon: <IconClipboard className='h-5 w-5' />,
+    icon: <IconDashboard className='h-5 w-5' />,
   },
   {
     label: 'Customers',
@@ -357,12 +368,12 @@ const PBEnterprise = [
   {
     label: 'AMC Reminder',
     href: ROUTES.AMC_REMINDER,
-    icon: <IconSetting className='h-5 w-5' />,
+    icon: <IconAlarm className='h-5 w-5' />,
   },
   {
     label: 'AMC Plans',
     href: ROUTES.AMC_PLANS,
-    icon: <IconSetting className='h-5 w-5' />,
+    icon: <IconChecklist className='h-5 w-5' />,
   },
   {
     label: 'User Type',
@@ -372,12 +383,12 @@ const PBEnterprise = [
   {
     label: 'Preventive Services',
     href: ROUTES.PREVENTIVE_SERVICES,
-    icon: <IconSetting className='h-5 w-5' />,
+    icon: <IconEvent className='h-5 w-5' />,
   },
   {
     label: 'Past Complaints',
     href: ROUTES.PAST_COMPLAINTS,
-    icon: <IconClipboard className='h-5 w-5' />,
+    icon: <IconCalendarPreviousDate className='h-5 w-5' />,
   },
   {
     type: 'separator',
@@ -417,7 +428,7 @@ const PBEnterprise = [
   {
     label: MENUITEM.IMPORT_CUSTOMER,
     href: ROUTES.IMPORT_CUSTOMER,
-    icon: <IconGroup className='h-5 w-5' />,
+    icon: <IconAccountArrowDown className='h-5 w-5' />,
   },
   {
     label: MENUITEM.IMPORT_DERVICE,
@@ -459,7 +470,7 @@ const Enterprise = [
   {
     label: 'Dashboard',
     href: ROUTES.DASHBOARD,
-    icon: <IconClipboard className='h-5 w-5' />,
+    icon: <IconDashboard className='h-5 w-5' />,
   },
   {
     label: 'Customers',

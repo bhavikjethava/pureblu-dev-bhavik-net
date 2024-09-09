@@ -484,7 +484,7 @@ const StartAMCDialog: FC<StartAMCDialogProps> = ({
           </div>
           <InputField
             type='file'
-            accept='.pdf,.xls,.jpg,.xlsx,.png,.jpeg,.docx,.zip,.txt'
+            // accept='.pdf,.xls,.jpg,.xlsx,.png,.jpeg,.docx,.zip,.txt'
             label='Attach Quote'
             key={formData?.quotationKey}
             //   value={formData?.quotation}

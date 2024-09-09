@@ -86,6 +86,7 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
   const pathName = usePathname();
   const basePath = getBaseUrl(pathName);
   const isPBEenterprise = basePath == ROUTES.PBENTERPRISE;
+  const isPBPartner = basePath == ROUTES.PBPARTNER;
   const [selectedBillingIds, setSelectedBillingds] = useState<string[]>([]);
   const [selectAllChecked, setSelectAllChecked] = useState(false);
   const [paymentReferences, setPaymentReferences] = useState<{
@@ -93,11 +94,9 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
   }>({});
 
   useEffect(() => {
-    if (!isPBEenterprise) {
+    // if (!isPBEenterprise) {
       fetchCustomer();
-      fetchGroups();
-      fetchCustomerBilling();
-    }
+    // }
   }, []);
 
   useEffect(() => {
@@ -109,6 +108,10 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
         pan: customer.pan,
         tan: customer.tan,
       });
+      if (!isPBPartner ||  customer?.is_enterprise == 2) {
+        fetchGroups();
+        fetchCustomerBilling();
+      }
     }
   }, [state?.[CUSTOMER]]);
 
@@ -237,10 +240,14 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
 
   const fetchCustomer = async () => {
     try {
-      const fetchCustomers = {
+      let fetchCustomers = {
         endpoint: `${apiBaseUrl?.CUSTOMERS}?need_all=1&billing_customer_list=1`,
         method: 'GET',
       };
+
+      if(isPBEenterprise){
+        fetchCustomers.endpoint = `${fetchCustomers?.endpoint}&is_enterprise=1`;
+      }
 
       const { data } = await apiAction.mutateAsync(fetchCustomers);
       if (data) setCustomerList(data);
@@ -465,7 +472,7 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
 
   return (
     <div className='flex h-[calc(100%-65px)] flex-grow flex-col p-6 md:p-5'>
-      <div className='flex h-full flex-col gap-5 overflow-auto'>
+      <div className='flex h-full flex-col gap-5'>
         <div className='grid w-full grid-cols-3 gap-1 rounded-md bg-white p-5'>
           <div className='col-span-2 grid grid-cols-1'>
             <span className='font-semibold'>Billing Address</span>
@@ -480,7 +487,7 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
             `}</span>
           </div>
           <div className='ml-auto'>
-            {customerInfo?.is_enterprise == 2 ? (
+            {!isPBPartner || customerInfo?.is_enterprise == 2 ? (
               <Button size={'sm'} onClick={onGroupClick}>
                 Group
               </Button>
@@ -516,7 +523,7 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
             />
           </div>
           <div className='flex items-center'>
-            {customerInfo?.is_enterprise == 2 && isEditTaxInfo ? (
+            {(!isPBPartner || customerInfo?.is_enterprise == 2) && isEditTaxInfo ? (
               <div className='grid  grid-cols-2 gap-3'>
                 <Button
                   size={'sm'}
@@ -540,7 +547,7 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
             ) : null}
           </div>
         </div>
-        <ScrollArea className='grow'>
+        {/* <ScrollArea className='grow'> */}
           <Accordion type='single' collapsible className='flex flex-col gap-5'>
             {billingLoading ? (
               <>
@@ -653,7 +660,13 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
                               size={'sm'}
                               disabled={isLoadingSend}
                               variant={'destructive'}
-                              icon={isLoadingSend ? <IconLoading /> : <IconClockTimeThreeOutline className='h-4 w-4 text-white' />}
+                              icon={
+                                isLoadingSend ? (
+                                  <IconLoading />
+                                ) : (
+                                  <IconClockTimeThreeOutline className='h-4 w-4 text-white' />
+                                )
+                              }
                               onClick={sendReminder}
                             >
                               Send Reminder
@@ -667,7 +680,7 @@ const BillingDetails: FC<BillingDetailsProps> = ({ apiBaseUrl }) => {
               </>
             )}
           </Accordion>
-        </ScrollArea>
+        {/* </ScrollArea> */}
       </div>
 
       <MyDialog

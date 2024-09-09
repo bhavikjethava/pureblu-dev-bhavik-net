@@ -76,6 +76,7 @@ function Dashboard({ apiBaseUrl, isDashboard, isPartnerDetail }: any) {
   const [complaintDetail, setComplaintDetail] = useState(
     state?.setComplaintDetail || {}
   );
+  const [openAccordion, setOpenAccordion] = useState('undefined');
 
   const { technicianList, updateTechnicianList } = useFetchTechnician(
     apiBaseUrl,
@@ -398,6 +399,11 @@ function Dashboard({ apiBaseUrl, isDashboard, isPartnerDetail }: any) {
     }
   };
 
+   const refreshCompain = () => {
+    setData({ [REFRESHCOMPLAINTLIST]: new Date().toISOString() });
+    // setselectedComplaint({});
+  }
+
   return (
     <div className='flex h-full grow flex-col overflow-hidden md:flex-row'>
       {!isPartnerDetail && (
@@ -417,6 +423,7 @@ function Dashboard({ apiBaseUrl, isDashboard, isPartnerDetail }: any) {
           value={searchComplaintsTerm}
           onChange={onSearch}
           className='py-4'
+          placeholder='Search by ID, customer name, phone, request type, or technician details'
         />
 
         <div className='flex h-full flex-col gap-5 overflow-auto'>
@@ -439,6 +446,8 @@ function Dashboard({ apiBaseUrl, isDashboard, isPartnerDetail }: any) {
                 type='single'
                 collapsible
                 className='flex flex-col gap-5'
+                value={openAccordion}
+                onValueChange={(value) => setOpenAccordion(value)}
               >
                 {complaintLoading ? (
                   <>
@@ -494,6 +503,7 @@ function Dashboard({ apiBaseUrl, isDashboard, isPartnerDetail }: any) {
                                       }
                                       isDashboard={isDashboard}
                                       currentBucket={item?.name}
+                                      refreshCompain={refreshCompain}
                                     />
                                   </AccordionItem>
                                 ))}
@@ -517,6 +527,9 @@ function Dashboard({ apiBaseUrl, isDashboard, isPartnerDetail }: any) {
             setAssignDialog(false), setselectedComplaint({});
             setSelectedSkill(-1);
             setSelectedComplaintIds([]);
+          }}
+          afterSave={() => {
+            setOpenAccordion('');
           }}
           technicianList={filteredTechnicianData}
           apiBaseUrl={apiBaseUrl}

@@ -113,13 +113,15 @@ const PauseDialog: FC<DialogProps> = ({
       setErrors(errors);
     } else {
       if (onPause) {
-        let param = {
+        let param: any = {
           action: 'pause',
           start_date: format(sDate || '', 'yyyy-MM-dd'),
           end_date: format(eDate || '', 'yyyy-MM-dd'),
-          pause_reason_id: selectedReason,
           is_idefinite: indefinite ? 1 : 2,
         };
+        if (selectedReason) {
+          param['pause_reason_id'] = selectedReason;
+        }
         onPause(param);
       }
     }

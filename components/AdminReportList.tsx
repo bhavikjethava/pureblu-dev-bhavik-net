@@ -239,11 +239,20 @@ const AdminReportList: React.FC<AdminReportListProps> = ({
     {
       accessorKey: 'sr_no',
       header: 'Sr No.',
-      render: (item: any, index: number) => <span>{index + 1}</span>,
+      render: (item: any, index: number) => <span>{(serviceList?.length || 0) - 1 === index ? '' : index + 1 }</span>,
     },
     {
       accessorKey: 'name',
       header: 'Name',
+      render: (item: any, index: number) => (
+        <span
+          className={`${
+            (serviceList?.length || 0) - 1 === index ? 'font-bold' : ''
+          }`}
+        >
+          {item?.name}
+        </span>
+      ),
       // render: (item: any) => {
       //   return
       //   isAdmin ? (
@@ -259,7 +268,19 @@ const AdminReportList: React.FC<AdminReportListProps> = ({
       //   );
       // },
     },
-    { accessorKey: 'count', header: 'Total Complaints Logged' },
+    {
+      accessorKey: 'count',
+      header: 'Total Complaints Logged',
+      render: (item: any, index: number) => (
+        <span
+          className={`${
+            (serviceList?.length || 0) - 1 === index ? 'font-bold' : ''
+          }`}
+        >
+          {item?.count}
+        </span>
+      ),
+    },
   ];
 
   const handleDateRangeChange = (field: string, value: any) => {

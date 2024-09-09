@@ -46,11 +46,11 @@ const columnsData = [
       <span>{format(item?.end_date || '', 'yyyy-MM-dd')}</span>
     ),
   },
-  {
-    accessorKey: 'reason',
-    header: 'Reason to Pause',
-    render: (item: any) => <span>{item?.pause_reason?.name}</span>,
-  },
+  // {
+  //   accessorKey: 'reason',
+  //   header: 'Reason to Pause',
+  //   render: (item: any) => <span>{item?.pause_reason?.name}</span>,
+  // },
 ];
 
 const PauseDialog: FC<DialogProps> = ({
@@ -98,11 +98,11 @@ const PauseDialog: FC<DialogProps> = ({
         value: eDate?.toDateString() || '',
         message: 'End date',
       },
-      {
-        field: 'selectedReason',
-        value: selectedReason || '',
-        customMessage: 'Please select Reason to Pause',
-      },
+      // {
+      //   field: 'selectedReason',
+      //   value: selectedReason || '',
+      //   customMessage: 'Please select Reason to Pause',
+      // },
     ];
     let { isError, errors } = validateForm(valifationRules);
     if (sDate > eDate) {
@@ -113,13 +113,15 @@ const PauseDialog: FC<DialogProps> = ({
       setErrors(errors);
     } else {
       if (onPause) {
-        let param = {
+        let param: any = {
           action: 'pause',
           start_date: format(sDate || '', 'yyyy-MM-dd'),
           end_date: format(eDate || '', 'yyyy-MM-dd'),
-          pause_reason_id: selectedReason,
           is_idefinite: indefinite ? 1 : 2,
         };
+        if (selectedReason) {
+          param['pause_reason_id'] = selectedReason;
+        }
         onPause(param);
       }
     }
@@ -215,7 +217,7 @@ const PauseDialog: FC<DialogProps> = ({
           ) : null}
         </div>
       </div>
-      <div className='px-4'>
+      {/* <div className='px-4'>
         <CheckboxItem
           key='Indefinite'
           checked={indefinite} // Check if the current brand id is in the selectedBrandIds array
@@ -253,7 +255,7 @@ const PauseDialog: FC<DialogProps> = ({
             {errors?.selectedReason}
           </div>
         ) : null}
-      </div>
+      </div> */}
       <div className='flex justify-end px-4'>
         <Button
           className=''

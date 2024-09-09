@@ -181,7 +181,7 @@ const Header: React.FC<HeaderProps> = ({ className = 'bg-pbHeaderRed' }) => {
         <div className='flex items-center'>
           {userData?.partner?.logo ? (
             <Image
-              className='h-10 w-10 object-cover'
+              className='h-14 w-auto'
               src={userData?.partner?.logo}
               alt={'Partner logo'}
               height={60}

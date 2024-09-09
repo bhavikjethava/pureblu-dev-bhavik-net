@@ -103,17 +103,17 @@ const PartnersDetails = ({ params }: { params: { id: string } }) => {
                     variant={'outline'}
                     size={'sm'}
                     onClick={() =>
-                      partner?.is_pause
+                      partner?.is_active != 1
                         ? setConfirmationDialogOpen(true)
                         : setShowModal(true)
                     }
                   >
-                    {!partner?.is_pause ? (
+                    {partner?.is_active == 1 ? (
                       <IconCirclePause className='mr-2 h-[18px] w-[18px]' />
                     ) : (
                       <IconPlayCircle className='mr-2 h-[20px] w-[20px]' />
                     )}
-                    {!partner?.is_pause ? 'Pause' : 'UnPause'} Partner
+                    {partner?.is_active == 1 ? 'Pause' : 'UnPause'} Partner
                   </Button>
                 ) : null}
               </ListGroupItem>

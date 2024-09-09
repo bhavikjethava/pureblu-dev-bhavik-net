@@ -14,6 +14,7 @@ interface SelectAsyncProps {
 }
 
 const colourStyles: StylesConfig<OptionProps> = {
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
   control: (styles) => ({ ...styles, backgroundColor: 'white' }),
   option: (styles, { data, isDisabled, isFocused, isSelected }) => {
     return {
@@ -46,6 +47,7 @@ const SelectAsync = ({ onSearch, error, ...rest }: any) => {
         loadOptions={(inputValue: string) => onSearch(inputValue)}
         styles={colourStyles}
         className='w-full min-w-[200px] max-w-[200px]'
+        menuPortalTarget={document?.body}
         {...rest}
       />
       {error && <div className='mt-1 text-xs text-pbHeaderRed'>{error}</div>}{' '}

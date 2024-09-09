@@ -55,6 +55,7 @@ interface FormData {
   [key: string]: any;
 }
 
+const PERPAGE = 50;
 const PreventiveService = ({ apiBaseUrl }: any) => {
   const [searchData, setSearchData] = useState<{ [Key: string]: any }>({
     search: '',
@@ -101,6 +102,8 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
     useState<FormData>();
   const { technicianList, updateTechnicianList } =
     useFetchTechnician(apiBaseUrl);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     if (state?.[HELPERSDATA]) {
@@ -113,6 +116,22 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
     }
   }, [state?.[HELPERSDATA]]);
 
+  // useEffect(() => {
+  //   isViewAll && fetchPreventiveService();
+  // }, [isViewAll]);
+
+  useEffect(() => {
+    if (page > 0) fetchPreventiveService();
+  }, [page]);
+
+  const refetchPreventiveService = () => {
+    if (page == 1) {
+      fetchPreventiveService();
+    } else {
+      setPage(1);
+    }
+  };
+
   const fetchPreventiveService = async () => {
     const fromDate = searchData?.from
       ? moment(searchData.from).format('Y-MM-DD')
@@ -121,9 +140,19 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
       ? moment(searchData.to).format('Y-MM-DD')
       : null;
 
-    let endpoint = `${apiBaseUrl.PREVENTIVE_SERVICES}?search_in_branch=${
-      searchData?.searchInBranch ? 1 : 2
-    }&search=${searchData?.search || ''}&need_all=1`;
+    let endpoint = `${apiBaseUrl.PREVENTIVE_SERVICES}?search=${
+      searchData?.search || ''
+    }`;
+
+    // if (isViewAll) {
+    //   endpoint += `&need_all=1`;
+    // } else {
+    endpoint += `&page=${page}&per_page=${PERPAGE}`;
+    // }
+
+    if (!isViewAll) {
+      endpoint += `&search_in_branch=${searchData?.searchInBranch ? 1 : 2}`;
+    }
 
     if (fromDate) {
       endpoint += `&from=${fromDate}`;
@@ -142,7 +171,14 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
       setServiceList(undefined);
       setPreventiveServiceLoading(true);
       const { data } = await apiAction.mutateAsync(fetchBrand);
-      if (data) setServiceList(data);
+      if (data) {
+        // if (isViewAll) {
+        //   setServiceList(data);
+        // } else {
+          setServiceList(data?.data);
+          setTotal(data?.total);
+        // }
+      }
     } catch (error) {
       console.error('Failed to fetch resource:', error);
     } finally {
@@ -180,7 +216,10 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
           setErrors({});
           setselectedTechnician({});
           setClearPastDialog(false);
-          if (response?.data > 0) fetchPreventiveService();
+          if (response?.data > 0) {
+            // fetchPreventiveService();
+            refetchPreventiveService();
+          }
         }
       }
     } catch (error: any) {
@@ -208,7 +247,8 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
 
       const { data } = await apiAction.mutateAsync(pastHistory);
       if (data) {
-        fetchPreventiveService();
+        // fetchPreventiveService();
+        refetchPreventiveService();
         setSelecteedServiceIds([]);
       }
     } catch (error) {
@@ -230,7 +270,8 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
         icon: <IconBxErrorCircle className='h-6 w-6' />,
       });
     } else {
-      fetchPreventiveService();
+      // fetchPreventiveService();
+      refetchPreventiveService();
     }
   };
 
@@ -242,9 +283,15 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
   };
 
   const onViewAll = () => {
-    setSearchData({});
+    setSearchData({
+      search: '',
+      from: null,
+      to: null,
+      searchInBranch: false,
+    });
     setViewAll(true);
-    fetchPreventiveService();
+    setPage(1);
+    // fetchPreventiveService();
   };
 
   const onAllPreventiveServicesSelect = (checked: boolean) => {
@@ -290,6 +337,13 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
     }
   };
 
+  const onNext = () => {
+    setPage((prePage) => prePage + 1);
+  };
+  const onPrevious = () => {
+    setPage((prePage) => prePage - 1);
+  };
+
   const columns: PreventiveServiceColumn[] = [
     ...(!isPBEnterprise
       ? [
@@ -320,23 +374,34 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
     {
       accessorKey: 'customer_id',
       header: 'Customer Id',
-      className: 'max-w-[120px]',
+      className: 'max-w-[95px]',
     },
     {
       accessorKey: 'customer',
       header: 'Customer',
+      className: 'max-w-[140px]',
       // render: (item: any) => <span>{item.customer.name}</span>,
       render: (item: any) => (
-        <Link
-          href={`${ROUTES.CUSTOMERS}/${item?.customer_id}`}
-          className='flex font-bold text-blueButton-default'
-          onClick={(e) => {
-            e.preventDefault();
-            router.push(`${ROUTES.CUSTOMERS}/${item?.customer_id}`);
-          }}
-        >
-          {item?.customer?.name}
-        </Link>
+        <div>
+          <Link
+            href={`${ROUTES.CUSTOMERS}/${item?.customer_id}`}
+            className='flex font-bold text-blueButton-default'
+            onClick={(e) => {
+              e.preventDefault();
+              router.push(`${ROUTES.CUSTOMERS}/${item?.customer_id}`);
+            }}
+          >
+            {item?.customer?.name}
+          </Link>
+
+          {item?.device?.branch && (
+            <>
+              <br />
+              <span className='font-semibold'>Branch:</span>
+              <span> {item?.device?.branch?.name}</span>
+            </>
+          )}
+        </div>
       ),
     },
     {
@@ -349,20 +414,53 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
             ? ',' + ' ' + (item?.customer?.address_3 || '')
             : ''}{' '}
           {item?.customer?.city?.name}
+          {item?.device?.branch && (
+            <div className='text-xs'>
+              <span className='font-semibold'>Branch Address:</span>
+              <span>
+                {item?.device?.branch?.address_1}
+                {item?.device?.branch?.address_2
+                  ? ',' + item?.device?.branch?.address_2
+                  : ''}
+                {item?.device?.branch?.address_3
+                  ? ',' + item?.device?.branch?.address_3
+                  : ''}
+              </span>
+            </div>
+          )}
         </span>
       ),
     },
-    // { accessorKey: 'modal', header: 'Model Number' },
+    {
+      accessorKey: 'modal',
+      header: 'Model Number',
+      className: 'max-w-[120px]',
+      render: (item: any) => (
+        <span>
+          {item?.device?.unit?.machine_model?.model_number || 'Not Known'}
+        </span>
+      ),
+    },
     {
       accessorKey: 'contact',
       header: 'Contact',
-      className: 'max-w-[100px]',
-      render: (item: any) => <span>{item?.customer?.phone}</span>,
+      className: 'max-w-[180px]',
+      render: (item: any) => (
+        <span>
+          {item?.customer?.phone}
+          {item?.device?.branch && (
+            <div className='text-xs'>
+              <span className='font-semibold'>Branch Contact:</span>
+              <span>{item?.device?.branch?.phone}</span>
+            </div>
+          )}
+        </span>
+      ),
     },
     {
       accessorKey: 'amc_plan',
       header: 'AMC',
-      className: 'max-w-[120px]',
+      className: 'max-w-[100px] break-words break-all	',
       render: (item: any) => (
         <span>{item?.amc_registration?.amc_plan?.amc_code}</span>
       ),
@@ -370,12 +468,12 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
     {
       accessorKey: 'device_id',
       header: 'Device Id',
-      className: 'max-w-[100px]',
+      className: 'max-w-[80px]',
     },
     {
       accessorKey: 'device',
       header: 'Device',
-      className: 'max-w-[160px]',
+      className: 'max-w-[120px]',
       render: (item: any) => (
         <span>
           {item?.device?.name}
@@ -388,6 +486,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
     {
       accessorKey: 'service_date',
       header: 'Service Date',
+      className: 'max-w-[120px]',
       render: (item: any) => (
         <span>{moment(item?.service_date).format('yyyy-MM-DD')}</span>
       ),
@@ -395,6 +494,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
     {
       accessorKey: 'service_type',
       header: 'Service Type',
+      className: 'max-w-[120px]',
       render: (item: any) => (
         <span>{item?.amc_service_type?.service_type}</span>
       ),
@@ -408,12 +508,13 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
           <Button
             variant='outline'
             size={'sm'}
+            className='!h-auto max-w-[80px] !px-2 !py-1 !text-[10px]'
             onClick={() => onAMCinfoClick(item)}
           >
             AMC Info
           </Button>
           {!isPBEnterprise && (
-            <Button size={'sm'} onClick={() => openAssignDialog(item)}>
+            <Button size={'sm'} onClick={() => openAssignDialog(item)} className='!h-auto max-w-[80px] !px-2 !py-1 !text-[10px] uppercase border'>
               Assign
             </Button>
           )}
@@ -551,18 +652,19 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
   };
 
   return (
-    <div className='h-full overflow-hidden p-5'>
-      <div className='flex h-full grow flex-col gap-5 bg-white p-5'>
+    <div className='h-full overflow-hidden p-3'>
+      <div className='flex h-full grow flex-col gap-3 bg-white p-3'>
         <Breadcrumb />
 
         <div
-          className={`grid w-full ${
-            isViewAll || isPBEnterprise ? 'grid-cols-6' : 'grid-cols-6'
+          className={`grid w-full grid-flow-col ${
+            isViewAll || isPBEnterprise ? 'auto-cols-fr' : 'auto-cols-fr'
           }  items-center gap-5`}
         >
-          <div className={isPBEnterprise ? 'col-span-4' : ''}>
+          <div className={isPBEnterprise ? 'col-span-2' : isViewAll ? 'col-span-2' : ''}>
             <InputField
               type='text'
+              size='sm'
               label=''
               placeholder='Name or User Id'
               value={searchData?.search}
@@ -576,6 +678,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
                 label=''
                 placeholderText='From'
                 dateFormat='dd/MM/yyyy'
+                size='sm'
                 onChange={(e) => {
                   onSearchChangeHandler('from', e);
                 }}
@@ -583,6 +686,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
               />
               <DatepickerComponent
                 label=''
+                size='sm'
                 placeholderText='To'
                 dateFormat='dd/MM/yyyy'
                 onChange={(e) => {
@@ -592,7 +696,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
               />
             </>
           ) : null}
-          {!isPBEnterprise && (
+          {!isViewAll && (
             <CheckboxItem
               key='SearchInBranch'
               checked={searchData?.searchInBranch} // Check if the current brand id is in the selectedBrandIds array
@@ -606,6 +710,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
           <Button
             variant={'blue'}
             className='!w-full'
+            size={'sm'}
             onClick={onSearchClcik}
             disabled={isPreventiveServiceLoading}
             icon={<IconSearch className='h-4 w-4 text-white' />}
@@ -616,6 +721,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
             <Button
               variant={'blue'}
               className='!w-full'
+              size={'sm'}
               onClick={onViewAll}
               disabled={isPreventiveServiceLoading}
             >
@@ -624,8 +730,8 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
           ) : null}
           {isViewAll ? (
             <>
-              <span className='font-bold'>
-                Total No of Pending Services : {serviceList?.length || 0}
+              <span className='font-bold col-span-2'>
+                Total No of Pending Services : {total || 0}
               </span>
               <div>
                 <Button
@@ -641,11 +747,12 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
         </div>
         <div className='flex h-full flex-col overflow-auto'>
           {!isPBEnterprise && (
-            <div className='mb-4 flex gap-4'>
+            <div className='flex gap-4'>
               {isViewAll ? (
                 <Button
                   size={'sm'}
                   variant={'blue'}
+                  className='mb-3'
                   onClick={() => handleConfirmationDialog()}
                 >
                   Clear Past
@@ -658,6 +765,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
                     <Button
                       size={'sm'}
                       variant={'blue'}
+                      className='mb-3'
                       onClick={() => markAsComplete()}
                     >
                       Mark as Complete
@@ -666,6 +774,7 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
                   <Button
                     variant={'outline'}
                     size={'sm'}
+                    className='mb-3'
                     disabled={!selectedServiceIds.length}
                     onClick={() => openMultipalAssignDialog()}
                   >
@@ -679,6 +788,11 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
             columns={columns}
             data={serviceList}
             searchTerm={false}
+            currentPage={page}
+            totalPage={total}
+            entriesPerPage={PERPAGE}
+            onNext={onNext}
+            onPrevious={onPrevious}
           />
 
           {openAMCInfoModal && (
@@ -702,7 +816,8 @@ const PreventiveService = ({ apiBaseUrl }: any) => {
             setAssignDialog(false), setselectedComplaint({});
             setSelectedSkill(-1);
             setSelecteedServiceIds([]);
-            fetchPreventiveService();
+            // fetchPreventiveService();
+            refetchPreventiveService();
           }}
           apiBaseUrl={apiBaseUrl}
           selectedComplaint={selectedComplaint}

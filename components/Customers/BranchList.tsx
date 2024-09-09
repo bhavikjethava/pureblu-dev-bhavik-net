@@ -94,7 +94,11 @@ const BranchList: React.FC<BranchListProps> = ({
 
   useEffect(() => {
     if (isPBenterPrise) {
-      setPartnerList(state?.[PARTNERS]);
+      const _partnerList: any = state?.[PARTNERS];
+      if (_partnerList?.findIndex((x: any) => x.id == 0) < 0) {
+        _partnerList.unshift({ id: 0, name: 'No partner' });
+      }
+      setPartnerList(_partnerList);
     }
   }, [state?.[PARTNERS]]);
 
@@ -171,7 +175,7 @@ const BranchList: React.FC<BranchListProps> = ({
         endpoint: `${apiBaseUrl.CUSTOMERS}/${id}/branch/${selectedBranch?.id}/assign-full-branch`,
         method: 'POST',
         body: {
-          partner_id,
+          ...partner_id == 0 ? {remove_partner:1 } : {partner_id},
         },
       };
 
@@ -210,6 +214,7 @@ const BranchList: React.FC<BranchListProps> = ({
         setitemList(tempCustomer);
         setConfirmation(false);
         setselectedItem({});
+        setData({ [REFRESHBRANCHLIST]: !state?.[REFRESHBRANCHLIST] });
       }
 
       setLoading(false);
@@ -293,7 +298,7 @@ const BranchList: React.FC<BranchListProps> = ({
           >
             Edit
           </Button>
-          {!isPBenterPrise && (
+          {/* {!isPBenterPrise && ( */}
             <Button
               size='xs'
               variant={'destructive'}
@@ -301,7 +306,7 @@ const BranchList: React.FC<BranchListProps> = ({
             >
               Delete
             </Button>
-          )}
+          {/* )} */}
         </div>
       ),
       // ),

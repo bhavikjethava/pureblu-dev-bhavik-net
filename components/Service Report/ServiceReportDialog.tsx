@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import MyDialog from '../MyDialog';
 import { ScrollArea } from '../ui/scroll-area';
 import {
@@ -11,6 +11,8 @@ import moment from 'moment';
 import ServiceReportEdit from './ServiceReportEdit';
 import useServiceReportData from '@/hooks/useServiceReportData';
 import useFetchTechnician from '@/hooks/useFetchTechnician';
+import { useMutation } from 'react-query';
+import { apiCall } from '@/hooks/api';
 
 interface ServiceReportDialogProps {
   open: boolean;
@@ -29,9 +31,32 @@ const ServiceReportDialog: React.FC<ServiceReportDialogProps> = ({
 }) => {
   const { actionCheckList, serviceActionList, sparePartsList } =
     useServiceReportData(apiBaseUrl);
+  const apiAction = useMutation(apiCall);
+  const [technicianList, setTechnicianList] = useState<any>([]);
+// Default open value to the first item
+const defaultOpenValue =  `main-item-0` ;
+  // const { technicianList, updateTechnicianList, activeTechnician } =
+  //   useFetchTechnician(apiBaseUrl, undefined, true, true);
 
-  const { technicianList, updateTechnicianList, activeTechnician } =
-    useFetchTechnician(apiBaseUrl, undefined, true);
+  useEffect(() => {
+    fetchTechnician();
+  }, []);
+
+  const fetchTechnician = async () => {
+    try {
+      let url = `${apiBaseUrl.TECHNICIAN}?need_all=1&is_active=1`;
+
+      const getdata = {
+        endpoint: `${url}`,
+        method: 'GET',
+      };
+      setTechnicianList(undefined);
+      const { data } = await apiAction.mutateAsync(getdata);
+      setTechnicianList(data.technician);
+    } catch (error) {
+      console.error('Failed to fetch technician:', error);
+    }
+  };
   return (
     <MyDialog
       open={open}
@@ -41,7 +66,7 @@ const ServiceReportDialog: React.FC<ServiceReportDialogProps> = ({
     >
       {' '}
       <ScrollArea className='grow bg-gray-100 p-4'>
-        <Accordion type='single' collapsible className='flex flex-col gap-5'>
+        <Accordion type='single' collapsible defaultValue={defaultOpenValue} className='flex flex-col gap-5'>
           {reportListList &&
             reportListList?.map((report: any, deviceIndex: number) => {
               const fullAddress = [
@@ -95,7 +120,9 @@ const ServiceReportDialog: React.FC<ServiceReportDialogProps> = ({
                 </AccordionItem>
               );
             })}
-            {(reportListList?.length || 0) == 0 && <span>No Service Report Found!</span>}
+          {(reportListList?.length || 0) == 0 && (
+            <span>No Service Report Found!</span>
+          )}
         </Accordion>
       </ScrollArea>
     </MyDialog>

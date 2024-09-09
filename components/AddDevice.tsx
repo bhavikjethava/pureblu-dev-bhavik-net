@@ -26,6 +26,7 @@ import {
   AccordionTrigger,
 } from './ui/accordion';
 import { Button } from './ui/button';
+import MultiSelectDropdown from './MultiSelect';
 // import Combobox from './ComboBox';
 
 interface AddDeviceProps {
@@ -41,7 +42,7 @@ interface AddDeviceProps {
   onClose?: () => void;
   onSave?: (newData: any) => void;
   apiBaseUrl: any;
-  onBrandChange?: (brandId: number) => void;
+  onBrandChange?: (brandId: number, unitIndex: number) => void;
 }
 
 interface FormData {
@@ -72,6 +73,9 @@ const AddDevice: React.FC<AddDeviceProps> = ({
   const [selectedformData, setselectedFormData] = useState<FormData>({
     ...selectedData,
     units: [{ id: 0, isSaved: false }], // Initialize with one unit
+    installed_on: selectedData?.isNew
+      ? new Date()
+      : selectedData?.installed_on && selectedData.installed_on,
     // Add other initial fields if needed
   });
   const [loading, setLoading] = useState(false);
@@ -81,6 +85,7 @@ const AddDevice: React.FC<AddDeviceProps> = ({
   const basePath = getBaseUrl(pathname);
   const isPBPartner = basePath == ROUTES.PBPARTNER;
   const [openDropdown, setOpenDropdown] = useState(false);
+  const [selectedAccordion, setSelectedAccordion] = useState('');
 
   const unitType = [
     { id: 1, name: 'Indoor Unit' },
@@ -120,11 +125,23 @@ const AddDevice: React.FC<AddDeviceProps> = ({
     if (unitIndex < updatedUnits.length) {
       updatedUnits[unitIndex] = {
         ...updatedUnits[unitIndex],
+        ...(field == 'brand_id' && {
+          machine_model_id: '',
+          selectedMachineModel: '',
+        }),
+        ...(field == 'selectedMachineModel' && { machine_model_id: value?.id }),
         [field]: value,
       };
     } else {
       // If the unit at the specified index does not exist, create a new unit object
-      updatedUnits[unitIndex] = { [field]: value };
+      updatedUnits[unitIndex] = {
+        ...(field == 'brand_id' && {
+          machine_model_id: '',
+          selectedMachineModel: '',
+        }),
+        ...(field == 'selectedMachineModel' && { machine_model_id: value?.id }),
+        [field]: value,
+      };
     }
 
     // Update the units array in the copied state
@@ -150,7 +167,7 @@ const AddDevice: React.FC<AddDeviceProps> = ({
       }));
     }
     if (field == 'brand_id' && value) {
-      onBrandChange?.(value);
+      onBrandChange?.(value, unitIndex);
     }
   };
 
@@ -244,8 +261,12 @@ const AddDevice: React.FC<AddDeviceProps> = ({
         let value = selectedformData[key];
 
         // Format date if it's a date field
-        if (key === 'installed_on' &&  value) {
-          value = moment(value).format('YYYY-MM-DD HH:mm:ss');
+        if (key === 'installed_on') {
+          if (value) {
+            value = moment(value).format('YYYY-MM-DD HH:mm:ss');
+          } else {
+            value = '';
+          }
         }
         data.append(key, value);
       });
@@ -275,11 +296,6 @@ const AddDevice: React.FC<AddDeviceProps> = ({
           field: 'machine_variant_id',
           value: selectedformData?.machine_variant_id,
           message: 'Variant',
-        },
-        {
-          field: 'installed_on',
-          value: selectedformData?.installed_on,
-          message: 'Installed on',
         },
       ];
 
@@ -390,6 +406,7 @@ const AddDevice: React.FC<AddDeviceProps> = ({
       ...prevData,
       units: [...prevData.units, { id: unitsCount }],
     }));
+    setSelectedAccordion(`sub-item-${unitsCount}`);
   };
 
   const removeUnit = (unitIndex: number) => {
@@ -481,7 +498,6 @@ const AddDevice: React.FC<AddDeviceProps> = ({
               error={errors?.machine_variant_id || ''}
             />
             <DatepickerComponent
-              isRequired
               label='Installed on' // User can pass the label text here
               dateFormat='dd/MM/yyyy'
               onChange={(e) => handleInputChange('installed_on', e)}
@@ -490,7 +506,12 @@ const AddDevice: React.FC<AddDeviceProps> = ({
               // onChange={handleDateChange}
             />
           </div>
-          <Accordion type='single' collapsible>
+          <Accordion
+            type='single'
+            collapsible
+            value={selectedAccordion}
+            onValueChange={(value: any) => setSelectedAccordion(`${value}`)}
+          >
             {selectedformData.units.map((unit: any, index: number) => (
               <>
                 <AccordionItem
@@ -549,7 +570,7 @@ const AddDevice: React.FC<AddDeviceProps> = ({
                         }
                         error={errors?.[`units.${index}.unit_type_id`] || ''}
                       />
-                      <SelectBox
+                      {/* <SelectBox
                         // isRequired
                         label='Model Number'
                         options={machineModelList}
@@ -562,6 +583,25 @@ const AddDevice: React.FC<AddDeviceProps> = ({
                             Number(e)
                           )
                         }
+                        error={
+                          errors?.[`units.${index}.machine_model_id`] || ''
+                        }
+                      /> */}
+                      <MultiSelectDropdown
+                        isMulti={false} // or false for single-select
+                        options={machineModelList?.[index]}
+                        closeMenuOnSelect={true}
+                        label='Model Number'
+                        value={unit.selectedMachineModel || ''}
+                        getOptionValue={(option) => option?.id} // Pass getOptionValue function
+                        getOptionLabel={(option) => option?.model_number} // Pass getOptionLabel function
+                        onChange={(selectedValues: any) => {
+                          handleUnitInputChange(
+                            index,
+                            'selectedMachineModel',
+                            selectedValues
+                          );
+                        }}
                         error={
                           errors?.[`units.${index}.machine_model_id`] || ''
                         }

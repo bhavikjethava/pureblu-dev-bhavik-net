@@ -72,48 +72,49 @@ const AddTechnician: React.FC<AddTechnicianProps> = ({
     useStateCity();
 
   useEffect(() => {
-    // if (selectedData?.country_id) {
-    //   setStateList(selectedData.allState);
-    //   fetchRequest(STATE, selectedData.country_id);
-    // }
-
-    setSelectedSkillIds([]);
-    setSelectedMachineIds([]);
-    setSelectedBrandIds([]);
-
-    if (selectedData?.state_id) {
-      setCityList(selectedData.allCity);
-      fetchRequest(CITY, selectedData.state_id);
-    }
-
-    // Check if brands array has elements before processing
-    if (selectedData?.brands && selectedData.brands.length > 0) {
-      const brandIds = selectedData.brands.map(
-        (item: any) => item.brand_id || []
+    // If adding a new technician, check all checkboxes by default
+    if (selectedData?.isNew) {
+      setSelectedBrandIds(helperData?.brand?.map((item: any) => item.id) || []);
+      setSelectedSkillIds(helperData?.skill?.map((item: any) => item.id) || []);
+      setSelectedMachineIds(
+        helperData?.machine?.map((item: any) => item.id) || []
       );
-      setSelectedBrandIds(brandIds);
+    } else {
+      if (selectedData?.state_id) {
+        setCityList(selectedData.allCity);
+        fetchRequest(CITY, selectedData.state_id);
+      }
+
+      // Check if brands array has elements before processing
+      if (selectedData?.brands && selectedData.brands.length > 0) {
+        const brandIds = selectedData.brands.map(
+          (item: any) => item.brand_id || []
+        );
+        setSelectedBrandIds(brandIds);
+      }
+
+      // Similarly, check for skills array
+      if (selectedData?.skills && selectedData.skills.length > 0) {
+        const skillsIds = selectedData.skills.map(
+          (item: any) => item.skill_id || []
+        );
+        setSelectedSkillIds(skillsIds);
+      }
+
+      // Check for machines_variant array
+      if (
+        selectedData?.machines_variant &&
+        selectedData?.machines_variant.length > 0
+      ) {
+        const machinesVariantIds = selectedData.machines_variant.map(
+          (item: any) => item.machine_variant_id || []
+        );
+        setSelectedMachineIds(machinesVariantIds);
+      }
     }
 
-    // Similarly, check for skills array
-    if (selectedData?.skills && selectedData.skills.length > 0) {
-      const skillsIds = selectedData.skills.map(
-        (item: any) => item.skill_id || []
-      );
-      setSelectedSkillIds(skillsIds);
-    }
-
-    // Check for machines_variant array
-    if (
-      selectedData?.machines_variant &&
-      selectedData?.machines_variant.length > 0
-    ) {
-      const machinesVariantIds = selectedData.machines_variant.map(
-        (item: any) => item.machine_variant_id || []
-      );
-      setSelectedMachineIds(machinesVariantIds);
-    }
     setselectedFormData(selectedData);
-  }, []);
+  }, [selectedData, helperData]);
 
   const handleInputChange = (key: string, value: any) => {
     onInputChange?.(key, value);

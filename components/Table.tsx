@@ -70,7 +70,7 @@ function TableComponent<T>({
                     {data?.map((item: any, index: number) => (
                       <tr
                         key={item?.id || index}
-                        className='flex border-b even:bg-[#f9f9f9]'
+                        className='flex border-b border-white even:bg-[#f9f9f9]'
                       >
                         {columns.map((column) => (
                           <td
@@ -103,7 +103,7 @@ function TableComponent<T>({
                 </ScrollArea>
               ) : (
                 <tbody className='flex grow items-center justify-center'>
-                  <tr className='font-bold'>
+                  <tr className='font-bold py-5'>
                     <td>No matching data.</td>
                   </tr>
                 </tbody>

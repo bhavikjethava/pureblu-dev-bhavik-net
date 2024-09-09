@@ -380,20 +380,11 @@ const TechnicianList: FC<TechnicianListProps> = ({ apiBaseUrl }) => {
           value: selectedItem?.status,
           message: 'status',
         },
-        {
-          field: 'profile_image',
-          value: selectedItem?.profile_image,
-          message: 'Profile Image',
-          type: VALIDATIONTYPE.ISFILE,
-        },
+       
       ];
 
       let { isError, errors } = validateForm(valifationRules);
 
-      if (!selectedItem?.profile_image) {
-        isError = true;
-        errors['logo'] = `Logo ${ERROR_MESSAGES.required}`;
-      }
 
       if (isError) {
         setErrors(errors);

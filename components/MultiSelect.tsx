@@ -57,7 +57,7 @@ const MultiSelectDropdown: React.FC<Props> = ({
           {isRequired && <span className='text-pbRed'>*</span>}
         </div>
       ) : null}
-      <div className='font-medium min-w-48'>
+      <div className='min-w-48 font-medium'>
         <Select
           isMulti={isMulti} // Use isMulti prop
           closeMenuOnSelect={closeMenuOnSelect}
@@ -77,7 +77,7 @@ const MultiSelectDropdown: React.FC<Props> = ({
                 : `${error ? '!border-pbRed' : ''} !border-input`,
           }}
           className={`!focus-visible:outline-none !shadow-none ${className}`}
-          classNamePrefix={`select${'-'+className}`}
+          classNamePrefix={`select${'-' + className}`}
           // value={selectedOptions} // Set the selected options
           onChange={handleSelectChange} // Handle selection change
           value={value} // Pass selected values to the value prop

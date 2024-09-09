@@ -335,7 +335,7 @@ function AddPartners() {
       header: 'Technicians',
       render: (item: any) => (
         <span>
-          ({item?.technicians_count} /{' '}
+          ({item?.technicians_count} / {item?.total_technicians} /{' '} 
           {item?.active_technicians == 0
             ? 'Unlimited'
             : item?.active_technicians}
@@ -358,7 +358,7 @@ function AddPartners() {
           </Button>
 
           {/* <a target='_blank' href='/PBPartner/login'> */}
-          {item.active_pause == null ? (
+          {item.is_active == 1 ? (
             <Button
               size='xs'
               icon={<IconLogIn />}

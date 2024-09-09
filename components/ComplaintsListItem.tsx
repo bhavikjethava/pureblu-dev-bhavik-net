@@ -3,7 +3,9 @@ import React, { memo, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from './ui/button';
 import {
+  IconLoading,
   IconMapPin,
+  IconPencil,
   IconPersonFill,
   IconTelephoneFill,
   IconWrench,
@@ -22,6 +24,12 @@ import CheckboxItem from './CheckboxItem';
 import { useAccessRights } from '@/hooks/useAccessRights';
 import { useMutation } from 'react-query';
 import { apiCall } from '@/hooks/api';
+import MyDialog from './MyDialog';
+import { ScrollArea } from './ui/scroll-area';
+import InputField from './InputField';
+import SelectBox from './SelectBox';
+import DatepickerComponent from './DatePicker';
+import { validateForm } from '@/utils/FormValidationRules';
 
 interface ComplaintsListItemProps {
   complaint: any;
@@ -39,6 +47,7 @@ interface ComplaintsListItemProps {
   isTechnician?: boolean;
   selectedComplaintIds: string[]; // Array of IDs for selected complaints
   currentBucket?: string;
+  refreshCompain?: any;
 }
 
 export type AssignPartner = {
@@ -64,6 +73,7 @@ const ComplaintsListItem: React.FC<ComplaintsListItemProps> = ({
   isManageServiceReport,
   isTechnician,
   currentBucket,
+  refreshCompain,
 }) => {
   const [serviceReportDialog, setServiceReportDialog] = useState(false);
   const pathname = usePathname();
@@ -76,6 +86,17 @@ const ComplaintsListItem: React.FC<ComplaintsListItemProps> = ({
   const { isAccess } = useAccessRights();
   const apiAction = useMutation(apiCall);
   const [complaintInfo, setComplainInfo] = useState<any>(complaint);
+  const [editComplaintDialog, setEditComplainDialog] = useState<any>({
+    show: false,
+    selectedItem: null,
+    isLoading: false,
+  });
+  const [formData, setFormData] = useState<any>({});
+  const [formErrors, setFormErrors] = useState<any>({});
+  const [branchList, setBranchList] = useState([]);
+  const [deviceList, setDeviceList] = useState([]);
+  const [branchDeviceList, setBranchDeviceList] = useState([]);
+  const [requestType, setRequestType] = useState([]);
 
   const [accordionComplain, setAccordionComplain] = useState({
     customerId: 0,
@@ -91,6 +112,15 @@ const ComplaintsListItem: React.FC<ComplaintsListItemProps> = ({
   useEffect(() => {
     setComplainInfo(complaint);
   }, [complaint?.request_technician?.technician]);
+
+  useEffect(() => {
+    if (deviceList?.length > 0 && formData?.branch_id) {
+      const branchBasedDevice = deviceList.filter(
+        (x: any) => x?.branch_id == formData?.branch_id
+      );
+      setBranchDeviceList(branchBasedDevice);
+    }
+  }, [branchList, deviceList, formData?.branch_id]);
 
   const fetchComplainDetail = async () => {
     try {
@@ -127,6 +157,172 @@ const ComplaintsListItem: React.FC<ComplaintsListItemProps> = ({
   const onComplainShow = (customerId: number, requestId: number) => {
     setAccordionComplain({ customerId, requestId });
   };
+
+  const openEditComplainDialog = () => {
+    setEditComplainDialog((prev: any) => ({
+      ...prev,
+      show: true,
+      selectedItem: complaintInfo,
+    }));
+    setFormErrors({});
+    setFormData({
+      branch_id: complaintInfo?.device?.branch_id,
+      device_id: complaintInfo?.device?.id,
+      request_type_id: complaintInfo?.request_type_id,
+      assign_date: new Date(complaintInfo?.request_technician?.assign_date),
+      inr: complaintInfo?.initial_price,
+    });
+    fetchBranch(complaintInfo?.customer_id);
+    fetchDevices(complaintInfo?.customer_id);
+    if (requestType.length == 0) {
+      fetchRequestType();
+    }
+  };
+
+  const onCloseEditComplainDialog = () => {
+    setEditComplainDialog({
+      show: false,
+      selectedItem: null,
+      isLoading: false,
+    });
+  };
+
+  const handleInputChange = (field: string, value: string | Date | null) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'branch_id' && { device_id: '' }),
+    }));
+    setFormErrors((prev: any) => ({
+      ...prev,
+      [field]: '',
+    }));
+
+    if (field === 'branch_id') {
+      const branchBasedDevice = deviceList.filter(
+        (x: any) => x?.branch_id == value
+      );
+      setBranchDeviceList(branchBasedDevice);
+    }
+  };
+
+  const fetchBranch = async (customerId: string) => {
+    try {
+      const fetchRequest = {
+        endpoint: `${apiBaseUrl.CUSTOMERS}/${customerId}/branch?need_all=1`,
+        method: 'GET',
+      };
+
+      const { data } = await apiAction.mutateAsync(fetchRequest);
+      if (data) {
+        setBranchList(data);
+      } else setBranchList([]);
+    } catch (error) {
+      console.error('Failed to fetch resource:', error);
+    }
+  };
+
+  const fetchDevices = async (customerId: any) => {
+    try {
+      const fetchDevice = {
+        endpoint: `${apiBaseUrl.CUSTOMERS}/${customerId}/device?need_all=1`,
+        method: 'GET',
+      };
+      const { data } = await apiAction.mutateAsync(fetchDevice);
+      setDeviceList(data);
+    } catch (error) {
+      console.error('Failed to fetch resource:', error);
+    }
+  };
+
+  const fetchRequestType = async () => {
+    try {
+      const fetchDevice = {
+        endpoint: `${apiBaseUrl.REQUESTTYPE}?need_all=1`,
+        method: 'GET',
+      };
+      const { data } = await apiAction.mutateAsync(fetchDevice);
+      if (data) setRequestType(data);
+    } catch (error) {
+      console.error('Failed to fetch resource:', error);
+    }
+  };
+
+  const handleComplainSave = () => {
+    const { branch_id, device_id, request_type_id, assign_date, inr } =
+      formData;
+    const valifationRules = [
+      { field: 'branch_id', value: branch_id, message: 'Branch name' },
+      {
+        field: 'device_id',
+        value: device_id,
+        message: 'Device name',
+      },
+      {
+        field: 'request_type_id',
+        value: request_type_id,
+        message: 'Request type',
+      },
+      { field: 'assign_date', value: assign_date, message: 'Assign date' },
+      { field: 'inr', value: inr, message: 'INR' },
+    ];
+
+    let { isError, errors } = validateForm(valifationRules);
+    if (!isError && moment(assign_date).isBefore(moment(new Date()))) {
+      errors['assign_date'] =
+        'Assign date and time must be greater than or equal to current date and time.';
+      isError = true;
+    }
+
+    if (isError) {
+      setFormErrors(errors);
+    } else {
+      let body = {
+        branch_id,
+        request_type_id,
+        device_id,
+        assign_date: moment(assign_date).format(`yyyy-MM-DD HH:mm`), //
+        initial_price: inr,
+      };
+      updateRequest(body);
+    }
+  };
+
+  const updateRequest = async (body: any) => {
+    try {
+      setEditComplainDialog((prev: any) => ({
+        ...prev,
+        isLoading: true,
+      }));
+      const postRequest = {
+        endpoint: `${apiBaseUrl.CUSTOMERS}/${editComplaintDialog?.selectedItem?.customer_id}/request/${editComplaintDialog?.selectedItem?.id}?_method=patch`,
+        method: 'POST',
+        body: body,
+      };
+      const response = await apiAction.mutateAsync(postRequest);
+      if (response?.isError) {
+        const error = {
+          branch_id: response?.errors?.branch_id,
+          inr: response?.errors?.initial_price,
+          device_id: response?.errors?.device_id,
+          request_type_id: response?.errors?.request_type_id,
+          assign_date: response?.errors?.assign_date,
+        };
+        setFormErrors(error);
+      } else {
+        onCloseEditComplainDialog?.();
+        refreshCompain?.();
+      }
+    } catch (e) {
+      console.log('===> error', e);
+    } finally {
+      setEditComplainDialog((prev: any) => ({
+        ...prev,
+        isLoading: false,
+      }));
+    }
+  };
+
   return (
     <>
       <AccordionTrigger
@@ -293,7 +489,7 @@ const ComplaintsListItem: React.FC<ComplaintsListItemProps> = ({
               Contact-No : {complaintInfo?.device?.branch?.phone}
             </span>
           </div>
-          <div className='flex flex-col gap-8 '>
+          <div className='relative flex flex-col gap-8'>
             <div className='flex flex-col gap-2'>
               {isPBPartner || isPBAdmin ? (
                 <Link
@@ -329,6 +525,13 @@ const ComplaintsListItem: React.FC<ComplaintsListItemProps> = ({
                 {complaintInfo?.device?.branch?.city?.name}
               </div>
             </div>
+            {(isDashboard && !isEnterprise) && (
+              <div className='absolute right-0'>
+                <Button variant={'link'} onClick={openEditComplainDialog}>
+                  <IconPencil className='h-6 w-6 text-pbHeaderBlue' />
+                </Button>
+              </div>
+            )}
             <div className='flex flex-col gap-2 font-bold capitalize'>
               <p>
                 Complaint Created By:-{' '}
@@ -469,6 +672,76 @@ const ComplaintsListItem: React.FC<ComplaintsListItemProps> = ({
           </div>
         </div>
       </AccordionContent>
+      {editComplaintDialog?.show && (
+        <MyDialog
+          open={editComplaintDialog?.show}
+          onClose={onCloseEditComplainDialog}
+          title='Edit Customer Complaint'
+          ClassName='sm:max-w-[50%]'
+          buttons={[
+            {
+              text: 'Save',
+              variant: 'blue',
+              size: 'sm',
+              onClick: handleComplainSave,
+              disabled: editComplaintDialog?.isLoading,
+              icon: editComplaintDialog?.isLoading ? <IconLoading /> : '',
+            },
+          ]}
+        >
+          <ScrollArea className='grow '>
+            <div className='flex grow flex-col overflow-auto p-4'>
+              <div className='grid  gap-5'>
+                <SelectBox
+                  label='Branch Name'
+                  options={branchList}
+                  value={formData.branch_id || ''}
+                  onChange={(e) => handleInputChange('branch_id', e)}
+                  error={formErrors?.branch_id || ''}
+                />
+                <SelectBox
+                  label='Device Name'
+                  options={branchDeviceList}
+                  value={formData.device_id || ''}
+                  onChange={(e) => handleInputChange('device_id', e)}
+                  error={formErrors?.device_id || ''}
+                />
+                <SelectBox
+                  label='Complaint Type'
+                  options={requestType}
+                  value={formData.request_type_id || ''}
+                  onChange={(e) => handleInputChange('request_type_id', e)}
+                  error={formErrors?.request_type_id || ''}
+                />
+                <DatepickerComponent
+                  showTimeSelect
+                  label='Assign Date'
+                  minDate={new Date()}
+                  minTime={new Date().setHours(23, 59, 59, 999)}
+                  maxTime={
+                    formData?.assign_date &&
+                    new Date(formData?.assign_date).toDateString() ===
+                      new Date().toDateString()
+                      ? new Date()
+                      : new Date().setHours(0, 0, 0, 0)
+                  }
+                  dateFormat='dd/MM/yyyy HH:mm'
+                  onChange={(e) => handleInputChange('assign_date', e)}
+                  selectedDate={formData?.assign_date}
+                  error={formErrors?.assign_date || ''}
+                />
+                <InputField
+                  type='tel'
+                  label='INR'
+                  value={formData?.inr || ''}
+                  onChange={(e) => handleInputChange('inr', e)}
+                  error={formErrors?.inr || ''}
+                />
+              </div>
+            </div>
+          </ScrollArea>
+        </MyDialog>
+      )}
     </>
   );
 };

@@ -594,8 +594,13 @@ function CustomersList({ apiBaseUrl }: any) {
           )}
           {item?.branch && (
             <div className='w-full py-2 font-bold'>
-              <span>Branch:- </span>
-              <span>{item?.branch[0]?.name}</span>
+              {item?.branch?.map((bran: any) => (
+                <>
+                  <span>Branch:- </span>
+                  <span>{bran?.name}</span>
+                  <br />
+                </>
+              ))}
             </div>
           )}
         </div>
@@ -614,14 +619,17 @@ function CustomersList({ apiBaseUrl }: any) {
           </span>
           {item?.branch && (
             <div className='w-full py-2 font-bold'>
-              <span>Branch Address:- </span>
-              <span>
-                {' '}
-                {item?.branch[0]?.address_1}
-                {item?.branch[0]?.address_2
-                  ? ',' + ' ' + item?.branch[0]?.address_3
-                  : ''}{' '}
-              </span>
+              {item?.branch?.map((bran: any) => (
+                <>
+                  <span>Branch Address:- </span>
+                  <span>
+                    {bran?.address_1}
+                    {bran?.address_2 ? `, ${bran?.address_2}` : ''}
+                    {bran?.address_3 ? `, ${bran?.address_3}` : ''}
+                  </span>
+                  <br />
+                </>
+              ))}
             </div>
           )}
         </div>
@@ -636,8 +644,13 @@ function CustomersList({ apiBaseUrl }: any) {
           <span className='block  '>{item?.phone}</span>
           {item?.branch && (
             <div className='w-full py-2 font-bold'>
-              <span>Branch Contact:- </span>
-              <span> {item?.branch[0]?.phone}</span>
+              {item?.branch?.map((bran: any) => (
+                <>
+                  <span>Branch Contact:- </span>
+                  <span> {bran?.phone}</span>
+                  <br />
+                </>
+              ))}
             </div>
           )}
         </div>

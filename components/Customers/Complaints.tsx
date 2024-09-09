@@ -78,7 +78,7 @@ const Complaints = ({ apiBaseUrl }: any) => {
   };
 
   return (
-    <div className='flex h-[calc(100%-65px)] flex-grow flex-col p-6 md:p-5'>
+    <div className='flex  flex-grow flex-col p-6 md:p-5'>
       <div className='flex h-full flex-col gap-5'>
         <ComplaintsList apiBaseUrl={apiBaseUrl} />
       </div>

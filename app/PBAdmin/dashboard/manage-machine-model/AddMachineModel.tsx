@@ -32,6 +32,8 @@ const AddMachineModel: React.FC<ManageMachineModelProps> = ({
 }) => {
   // React State: Form data state and function to update it
   const [formData, setFormData] = useState<FormData>({
+    rating: 1,
+    machine_type_id: 1,
     ...data,
   });
 
@@ -61,20 +63,21 @@ const AddMachineModel: React.FC<ManageMachineModelProps> = ({
       open={open}
       onClose={onClose}
       title='Add / Edit Machine Model'
-      ClassName='h-[88%]'
+      ClassName='min-w-[80%]'
       buttons={[
         {
           text: 'Save',
           variant: 'blue',
           size: 'sm',
           onClick: handleSave,
+          disabled: isLoading,
           icon: isLoading ? <IconLoading /> : '',
         },
       ]}
     >
       <ScrollArea className='grow '>
         <div className='flex grow flex-col overflow-auto p-4'>
-          <div className='grid  gap-5'>
+          <div className='grid grid-cols-2 gap-5'>
             <SelectBox
               label='Brands:'
               options={formHelper.brandList}

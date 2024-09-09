@@ -374,10 +374,10 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
   };
 
   return (
-    <div className='flex h-full grow flex-col overflow-hidden md:flex-row'>
-      <div className='w-full flex-none overflow-auto rounded-sm bg-white py-10 pl-5 pr-1 text-base shadow-2xl md:w-[300px]'>
-        <div className='relative flex h-full grow flex-col'>
-          <div className='py-3 pr-4'>
+    <div className='flex  flex-col md:flex-row'>
+      <div className='w-full sticky top-0 z-30 flex-none h-screen overflow-auto  rounded-sm bg-white py-5 pl-5 pr-1 text-base shadow-2xl md:w-[300px]'>
+        <div className='  flex h-full grow flex-col'>
+          <div className='mb-3 pr-4'>
             <Button
               className=''
               variant={'outline'}
@@ -404,17 +404,18 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                 value={`PBCUS-${selectedformData?.id}`}
                 loading={!selectedformData} // Add loading prop here
               />
-              <ListGroupItem>
+              <ListGroupItem className=''>
                 <EditableField
-                  label='Name of Customers'
+                  label='Customer Name'
                   value={selectedformData?.name || ''}
                   editMode={editMode}
                   onChange={(value) => handleInputChange('name', value)}
                   error={errors?.name}
                   loading={!selectedformData} // Add loading prop here
+                  labelClass='uppercase'
                 />
               </ListGroupItem>
-              <ListGroupItem>
+              <ListGroupItem className=''>
                 <EditableField
                   label='Contact Number'
                   value={selectedformData?.phone || ''}
@@ -422,7 +423,9 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                   onChange={(value) => handleInputChange('phone', value)}
                   error={errors?.phone}
                   loading={!selectedformData} // Add loading prop here
+                  labelClass='uppercase'
                 />
+                {selectedformData?.phone_1 &&
                 <EditableField
                   label=''
                   value={selectedformData?.phone_1 || ''}
@@ -430,9 +433,11 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                   onChange={(value) => handleInputChange('phone_1', value)}
                   error={errors?.phone_1}
                   loading={!selectedformData} // Add loading prop here
+                  labelClass='uppercase'
                 />
+                }
               </ListGroupItem>
-              <ListGroupItem>
+              <ListGroupItem className=''>
                 <EditableField
                   label='Email'
                   value={selectedformData?.email || ''}
@@ -440,6 +445,7 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                   onChange={(value) => handleInputChange('email', value)}
                   error={errors?.email}
                   loading={!selectedformData} // Add loading prop here
+                  labelClass='uppercase'
                 />
                 <EditableField
                   label=''
@@ -448,6 +454,7 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                   onChange={(value) => handleInputChange('email_1', value)}
                   error={errors?.email_1}
                   loading={!selectedformData} // Add loading prop here
+                  labelClass='uppercase'
                 />
                 <EditableField
                   label=''
@@ -456,9 +463,10 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                   onChange={(value) => handleInputChange('email_2', value)}
                   error={errors?.email_2}
                   loading={!selectedformData} // Add loading prop here
+                  labelClass='uppercase'
                 />
               </ListGroupItem>
-              <ListGroupItem>
+              <ListGroupItem className=''>
                 <AddressField
                   label='Address'
                   editMode={editMode}
@@ -472,7 +480,7 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                 />
               </ListGroupItem>
               {editMode && (
-                <ListGroupItem>
+                <ListGroupItem className=''>
                   <div className='flex gap-4'>
                     <Button
                       className='w-full'
@@ -496,7 +504,7 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
               )}
               {!isEnterprise && (isPBenterPrise || customerData?.is_enterprise == 2) && (
                 <>
-                  <ListGroupItem className='gap-4'>
+                  <ListGroupItem className='gap-3 !py-3'>
                     <CheckboxItem
                       checked={
                         selectedformData?.is_first_service_first_month === 1
@@ -530,7 +538,7 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                       id='is_batch_report'
                     />
                   </ListGroupItem>
-                  <ListGroupItem>
+                  <ListGroupItem className=''>
                     <div className={`flex items-center space-x-2 `}>
                       <label
                         htmlFor={'is_vip'}
@@ -562,7 +570,7 @@ const CustomerDetail = ({ id, apiBaseUrl }: any) => {
                   </ListGroupItem>
                 </>
               )}
-              <ListGroupItem className='gap-4'>
+              <ListGroupItem className='gap-2 '>
                 {selectedformData?.id ? (
                   <Button
                     className=''

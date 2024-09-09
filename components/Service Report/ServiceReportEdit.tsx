@@ -29,6 +29,7 @@ import { DataContext } from '@/context/dataProvider';
 import Loader from '../Loader';
 import { usePathname } from 'next/navigation';
 import ZoomImageModal from '../ZoomImageModal';
+import ConfirmationDialog from '../ConfirmationDialog';
 
 interface ServiceData {
   [key: string]: any;
@@ -82,6 +83,10 @@ const ServiceReportEdit: React.FC<CreateServiceReportDialogProps> = ({
   });
   const [loadingClose, setLoadingClose] = useState(false);
   const [loadingPending, setLoadingPending] = useState(false);
+  const [confirmationDialog, setConfirmationDialog] = useState({
+    show: false,
+    selectedItem: '',
+  });
 
   const handalClose = () => {
     onClose();
@@ -148,13 +153,20 @@ const ServiceReportEdit: React.FC<CreateServiceReportDialogProps> = ({
   const saveServiceReport = async (status: string) => {
     try {
       // Start the loading state
-      if (status === 'is_closed') {
-        setLoadingClose(true);
+      if (
+        status === 'is_closed' &&
+        !confirmationDialog?.show &&
+        selectedValues?.require_spare_parts?.length > 0
+      ) {
+        // setLoadingClose(true);
+        setConfirmationDialog({
+          show: true,
+          selectedItem: 'is_closed',
+        });
+        return;
       } else if (status === 'pending') {
         setLoadingPending(true);
       }
-      const isEdit = reportData?.id;
-
       // Validation
       const formData: any = new FormData();
 
@@ -232,38 +244,56 @@ const ServiceReportEdit: React.FC<CreateServiceReportDialogProps> = ({
             formData.append(`report_files[${index}]`, file); // Append each file
           });
         }
-        let apiUrl;
+        //post service
+        postServiceReport(formData, status);
+      }
+    } catch (e) {
+      console.log('====>', e);
+    }
+  };
 
+  // post service report
+  const postServiceReport = async (formData: any, status: string) => {
+    try {
+      if (status === 'is_closed') {
+        setLoadingClose(true);
+      }
+      const isEdit = reportData?.id;
+      let apiUrl;
+
+      if (isEdit) {
+        apiUrl = `${apiBaseUrl.CUSTOMERS}/${complaintDetail.customer_id}/request/${reportData?.request_id}/service-report/${reportData.id}?_method=patch`;
+      } else {
+        apiUrl = `${apiBaseUrl.CUSTOMERS}/${complaintDetail.customer_id}/request/${complaintDetail?.id}/service-report`;
+      }
+
+      const technician = {
+        endpoint: apiUrl,
+        method: 'POST',
+        body: formData,
+        isFormData: true,
+      };
+
+      const response = await apiAction.mutateAsync(technician);
+
+      if (response?.isError) {
+        setErrors(response.errors);
+      } else {
+        setErrors({});
+        setData({ ...state, [REFRESHCOMPLAINTLIST]: Date.now() }); // Update the state to trigger the API call
         if (isEdit) {
-          apiUrl = `${apiBaseUrl.CUSTOMERS}/${complaintDetail.customer_id}/request/${reportData?.request_id}/service-report/${reportData.id}?_method=patch`;
+          setEditMode(false);
+          setConfirmationDialog({
+            show: false,
+            selectedItem: '',
+          });
         } else {
-          apiUrl = `${apiBaseUrl.CUSTOMERS}/${complaintDetail.customer_id}/request/${complaintDetail?.id}/service-report`;
+          handalClose();
         }
-
-        const technician = {
-          endpoint: apiUrl,
-          method: 'POST',
-          body: formData,
-          isFormData: true,
-        };
-
-        const response = await apiAction.mutateAsync(technician);
-
-        if (response?.isError) {
-          setErrors(response.errors);
-        } else {
-          setErrors({});
-          setData({ ...state, [REFRESHCOMPLAINTLIST]: Date.now() }); // Update the state to trigger the API call
-          if (isEdit) {
-            setEditMode(false);
-          } else {
-            handalClose();
-          }
-          setSelectedValues(response.data);
-          setData({ [REFRESHUNITSERVICELIST]: Date.now() });
-          if (status === 'is_closed') {
-            setData({ [REFRESHCOMPLAINDETAIL]: Date.now() });
-          }
+        setSelectedValues(response.data);
+        setData({ [REFRESHUNITSERVICELIST]: Date.now() });
+        if (status === 'is_closed' || isEdit) {
+          setData({ [REFRESHCOMPLAINDETAIL]: Date.now() });
         }
       }
     } catch (error: any) {
@@ -316,6 +346,13 @@ const ServiceReportEdit: React.FC<CreateServiceReportDialogProps> = ({
     setSelectedImage('');
   };
 
+  const onCloseConfrimationDialogClose = () => {
+    setConfirmationDialog({
+      show: false,
+      selectedItem: '',
+    });
+  };
+
   return (
     <div className='grid grid-cols-2 gap-4'>
       {!editMode && (
@@ -360,6 +397,15 @@ const ServiceReportEdit: React.FC<CreateServiceReportDialogProps> = ({
             label='Check In'
             showTimeSelect={true}
             dateFormat='dd/MM/yyyy HH:mm'
+            maxDate={new Date()}
+            minTime={new Date().setHours(0, 0, 0, 0)}
+            maxTime={
+              selectedValues?.checked_in_at &&
+              new Date(selectedValues?.checked_in_at).toDateString() ===
+                new Date().toDateString()
+                ? new Date()
+                : new Date().setHours(23, 59, 59, 999)
+            }
             size='md'
             className='grid'
             onChange={(newDate: Date | null) =>
@@ -520,7 +566,7 @@ const ServiceReportEdit: React.FC<CreateServiceReportDialogProps> = ({
         ) : (
           <div>
             {<div className='mb-1 font-bold'>Images</div>}
-            <div className='flex gap-4 flex-wrap'>
+            <div className='flex flex-wrap gap-4'>
               {selectedValues?.report_image?.map((img: any, index: number) => {
                 return (
                   <Image
@@ -563,14 +609,14 @@ const ServiceReportEdit: React.FC<CreateServiceReportDialogProps> = ({
                 variant={'outline'}
                 icon={loadingClose ? <IconLoading /> : ''}
                 onClick={() => saveServiceReport('is_closed')}
-                disabled={loadingClose}
+                disabled={loadingClose || loadingPending}
               >
                 Close
               </Button>
               <Button
                 onClick={() => saveServiceReport('pending')}
                 icon={loadingPending ? <IconLoading /> : ''}
-                disabled={loadingPending}
+                disabled={loadingPending || loadingClose}
               >
                 Pending
               </Button>
@@ -593,6 +639,47 @@ const ServiceReportEdit: React.FC<CreateServiceReportDialogProps> = ({
         onRequestClose={closeDialog}
         imageSrc={selectedImage}
       />
+      {confirmationDialog?.show && (
+        <ConfirmationDialog
+          isOpen={confirmationDialog.show}
+          onClose={onCloseConfrimationDialogClose}
+          buttons={[
+            {
+              text: 'Close',
+              variant: 'outline',
+              size: 'sm',
+              onClick: () => saveServiceReport('is_closed'),
+              disabled: loadingPending,
+              btnLoading: loadingClose,
+              icon: loadingClose ? <IconLoading /> : '',
+            },
+            {
+              text: 'Pending',
+              variant: 'default',
+              size: 'sm',
+              onClick: () => saveServiceReport('pending'),
+              btnLoading: loadingPending,
+              disabled: loadingClose,
+              icon: loadingPending ? <IconLoading /> : '',
+            },
+          ]}
+          ClassName='min-w-[45%]' // You can customize the dialog size class if needed
+        >
+          Are you sure you want to close the call? You have selected the
+          following spare parts required:
+          <br />
+          <div className='text-left text-base font-medium'>
+            {selectedValues?.require_spare_parts.map(
+              (x: any, index: number) => (
+                <>
+                  <br />
+                  <span>{`${index + 1}) ${x?.particulars}`}</span>
+                </>
+              )
+            )}
+          </div>
+        </ConfirmationDialog>
+      )}
     </div>
   );
 };

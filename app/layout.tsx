@@ -6,7 +6,7 @@ import Providers from '@/utils/Provider';
 import { DataProvider } from '@/context/dataProvider';
 import { CookiesProvider } from 'next-client-cookies/server';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'] }); 
 
 export const metadata: Metadata = {
   title: 'Pureblu Admin Dashboard',

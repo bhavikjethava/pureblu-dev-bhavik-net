@@ -76,6 +76,7 @@ export const API_ENDPOINTS = {
   IMPORT_CUSTOMERS: `${ADMIN}customer/import`,
   IMPORT_TECHNICIANS: `${ADMIN}technician/import`,
   IMPORT_DEVICES: `${ADMIN}customer/{id}/device/import`,
+  IMPORT_MACHINE_MODEL: `${ADMIN}machine-model/import`,
   TECHNICIAN_REGISTER: `${ADMIN}technician-register`,
 };
 

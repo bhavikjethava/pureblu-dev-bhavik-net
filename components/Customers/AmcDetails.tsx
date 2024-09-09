@@ -30,6 +30,7 @@ import { isRequired } from '@/utils/ValidationUtils';
 import AmcActionDialog from './AmcActionDialog';
 import Loader from '../Loader';
 import MultiSelectDropdown from '../MultiSelect';
+import { render } from '@fullcalendar/core/preact.js';
 
 const TYPE = {
   DEVICE: 'device',
@@ -60,6 +61,7 @@ const useDebounce = (callback: Function, delay: number) => {
   return debouncedFunction;
 };
 
+let localSelectedAmcList: any = [];
 const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
   const [branchList, setBranchList] = useState<Array<OptionType>>([]);
   const [deviceList, setDeviceList] = useState<Array<OptionType>>([]);
@@ -111,12 +113,15 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
   const pathName = usePathname();
   const basePath = getBaseUrl(pathName);
   const isPBEenterprise = basePath == ROUTES.PBENTERPRISE;
+  const isPBPartner = basePath == ROUTES.PBPARTNER;
+  const isEenterprise = basePath == ROUTES.ENTERPRISE;
 
   const initialAMCListColumns = useMemo(
     () => [
       {
         accessorKey: 'id',
-        header: 'Registration Id',
+        header: 'Reg Id',
+        className: 'max-w-[70px] break-words whitespace-pre-line',
         render: (item: any) => (
           <span className={getAMCColor(item)}>{item?.id}</span>
         ),
@@ -139,6 +144,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       {
         accessorKey: 'amc',
         header: 'AMC',
+        className: 'max-w-[120px] break-words break-all	',
         render: (item: any) => <span>{item?.amc_plan?.amc_code}</span>,
       },
       {
@@ -149,20 +155,20 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
             <div>
               <span className='font-bold'>{item?.device?.branch?.name}</span>
             </div>
-            <div>
-              <span>{item?.device?.branch?.address_1}</span>
-            </div>
-            <div>
-              <span>{item?.device?.branch?.address_2}</span>
-            </div>
-            <div>
-              <span>{item?.device?.branch?.address_3}</span>
-            </div>
-            <div>
-              <span className='font-bold'>Locality:</span>
-            </div>
-            <div>
-              <span>{item?.device?.branch?.locality}</span>
+            <div className='text-xs'>
+              <div>
+                <span>{item?.device?.branch?.address_1}</span>
+              </div>
+              <div>
+                <span>{item?.device?.branch?.address_2}</span>
+              </div>
+              <div>
+                <span>{item?.device?.branch?.address_3}</span>
+              </div>
+              <div className='flex gap-1'>
+                <span className='font-bold'>Locality:</span>
+                <span>{item?.device?.branch?.locality}</span>
+              </div>
             </div>
           </div>
         ),
@@ -170,6 +176,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       {
         accessorKey: 'request_date',
         header: 'Request Date',
+        className: 'max-w-[115px] break-words ',
         render: (item: any) => (
           <span>{moment(item?.created_at).format(YYYYMMDD)}</span>
         ),
@@ -177,6 +184,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       {
         accessorKey: 'start_date',
         header: 'Start Date',
+        className: 'max-w-[110px] break-words whitespace-pre-line',
         render: (item: any) => (
           <span>{moment(item?.start_date).format(YYYYMMDD)}</span>
         ),
@@ -184,6 +192,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       {
         accessorKey: 'end_date',
         header: 'End Date',
+        className: 'max-w-[110px] break-words whitespace-pre-line',
         render: (item: any) => (
           <span>{moment(item?.end_date).format(YYYYMMDD)}</span>
         ),
@@ -191,67 +200,80 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       {
         accessorKey: 'action',
         header: 'Action',
+        className: 'max-w-[110px]',
         render: (item: any) =>
           filter?.futureAMC == 0 || filter?.futureAMC == 2 ? (
             <div className='flex flex-col space-y-2'>
               <Button
                 variant='outline'
                 size={'sm'}
+                className='!h-auto max-w-[80px] !px-2 !py-1 !text-[10px]'
                 onClick={() => onAMCinfoClick(item)}
               >
                 AMC Info
               </Button>
-              {customerData?.is_enterprise == 2 && (
-                <>
-                  {item.terminated_date ? (
-                    <Button variant='outline' color='danger'>
-                      Terminated on
-                      <br />
-                      {moment(item.terminated_date).format(YYYYMMDD)}
-                    </Button>
-                  ) : item.amc_status == 1 ? (
+              {(!isPBPartner || customerData?.is_enterprise == 2) &&
+                !isEenterprise && (
+                  <>
+                    {item.terminated_date ? (
+                      <Button
+                        variant='outline'
+                        color='danger'
+                        className='!h-auto max-w-[80px] whitespace-normal !px-1 !py-1 !text-[11px]'
+                      >
+                        Terminated on
+                        <br />
+                        {moment(item.terminated_date).format(YYYYMMDD)}
+                      </Button>
+                    ) : item.amc_status == 1 ? (
+                      <Button
+                        variant='outline'
+                        size={'sm'}
+                        className='!h-auto max-w-[80px] whitespace-normal text-wrap !px-1 !py-1 !text-[10px]'
+                        onClick={() => terminateAMCConfirm(item)}
+                      >
+                        Terminate AMC
+                      </Button>
+                    ) : null}
+                    {
+                      //!isPBEenterprise &&
+                      item.amc_status != 1 && item.amc_status != 3 ? (
+                        <Button
+                          variant='outline'
+                          size={'sm'}
+                          className='!h-auto max-w-[80px] !px-1 !py-1 !text-[10px]'
+                          onClick={() => onArchiveAMCConfirm(item)}
+                        >
+                          Archive
+                        </Button>
+                      ) : null
+                    }
                     <Button
                       variant='outline'
                       size={'sm'}
-                      onClick={() => terminateAMCConfirm(item)}
+                      className='!h-auto max-w-[80px] !px-1 !py-1 !text-[10px] '
+                      onClick={() => onSingleRenewAMC(item)}
                     >
-                      Terminate AMC
+                      Renew AMC
                     </Button>
-                  ) : null}
-                  {!isPBEenterprise &&
-                  item.amc_status != 1 &&
-                  item.amc_status != 3 ? (
-                    <Button
-                      variant='outline'
-                      size={'sm'}
-                      onClick={() => onArchiveAMCConfirm(item)}
-                    >
-                      Archive
-                    </Button>
-                  ) : null}
-                  <Button
-                    variant='outline'
-                    size={'sm'}
-                    onClick={() => onSingleRenewAMC(item)}
-                  >
-                    Renew AMC
-                  </Button>
-                  {/* item.terminated_date && */}
-                  {item.amc_status != 1 && !isPBEenterprise ? (
-                    <Button
-                      variant='outline'
-                      size={'sm'}
-                      onClick={() => onDeleteAMCConfirmation(item)}
-                    >
-                      Delete AMC
-                    </Button>
-                  ) : null}
-                </>
-              )}
+                    {/* item.terminated_date && */}
+                    {item.amc_status != 1 /* && !isPBEenterprise */ ? (
+                      <Button
+                        variant='outline'
+                        size={'sm'}
+                        className='!h-auto max-w-[80px] !px-1 !py-1 !text-[10px]'
+                        onClick={() => onDeleteAMCConfirmation(item)}
+                      >
+                        Delete AMC
+                      </Button>
+                    ) : null}
+                  </>
+                )}
             </div>
           ) : (
             <Button
               variant='outline'
+              className='!h-auto text-wrap !px-1 !py-1 !text-[10px]'
               size={'sm'}
               onClick={() => onDeleteAMCConfirmation(item)}
             >
@@ -307,7 +329,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
 
   const inputChangeHandler = (field: string, value: any) => {
     if (field === 'selectedBranch') {
-      if (value === -1) {
+      if (value?.id === -1) {
         let tempDeiceList: Array<OptionType> = [];
         if (state?.[DEVICELIST]) tempDeiceList = [...state?.[DEVICELIST]];
         tempDeiceList.unshift({ id: -1, name: 'All Devices' });
@@ -315,7 +337,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       } else {
         let tempDeiceList: Array<OptionType> = [];
         tempDeiceList = state?.[DEVICELIST]?.filter(
-          (x: any) => x?.branch_id == value
+          (x: any) => x?.branch_id == value?.id
         );
         tempDeiceList.unshift({ id: -1, name: 'All Devices' });
         setDeviceList(tempDeiceList);
@@ -464,10 +486,32 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       const { data } = await apiAction.mutateAsync(fetchAMCRequest);
       if (data?.data) {
         if (page == 1) {
-          setSelecteedAMCCount(0);
-          setAMCList(data?.data);
+          // setSelecteedAMCCount(0);
+          if (localSelectedAmcList?.length > 0) {
+            const mergedArray = data?.data.map((item: any) => {
+              const localItem = localSelectedAmcList.find(
+                (local: any) => local.id === item.id
+              );
+              return {
+                ...item,
+                ...(localItem ? { ...localItem } : {}),
+              };
+            });
+            setAMCList([...mergedArray]);
+          } else {
+            setAMCList(data?.data);
+          }
         } else {
-          setAMCList((prev) => [...(prev || []), ...data?.data]);
+          const mergedArray = data?.data.map((item: any) => {
+            const localItem = localSelectedAmcList.find(
+              (local: any) => local.id === item.id
+            );
+            return {
+              ...item,
+              ...(localItem ? { ...localItem } : {}),
+            };
+          });
+          setAMCList((prev) => [...(prev || []), ...mergedArray]);
         }
         isSelectAllAMC = false;
         localPage = 1;
@@ -556,9 +600,11 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       page: 1,
       archive: 2,
     }));
+    localSelectedAmcList = [];
   };
 
   const onAddNewAMC = () => {
+    localSelectedAmcList = [];
     setFilter((pre) => ({
       ...pre,
       inactiveAMC: 2,
@@ -604,7 +650,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
     } else {
       setStartAMCModal(true);
       setRenewAMC(true);
-      const selectedList: any = amcList?.filter((x: any) => x.isChecked);
+      const selectedList: any = localSelectedAmcList; //amcList?.filter((x: any) => x.isChecked);
 
       let tempAMCList = selectedList?.map((x: any) => {
         return { ...x.device, amc: x };
@@ -612,10 +658,6 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
 
       setStartNewAMCDevices(tempAMCList as any);
     }
-  };
-
-  const onCloseSaveMultipleAMC = (isRefech?: boolean) => {
-    clearAllState(isRefech);
   };
 
   const onStartAMCClick = (isRefech?: boolean, item?: any) => {
@@ -679,6 +721,11 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
     let tempAmcList: any = [];
     setAMCList((pre: any) => {
       tempAmcList = updateArray(pre, item) as any;
+      if (!checked) {
+        localSelectedAmcList = localSelectedAmcList.filter(
+          (_item: any) => _item?.id !== item?.id
+        );
+      }
       selectedAMCList = getSelectedListCount(tempAmcList);
       return tempAmcList;
     });
@@ -690,15 +737,22 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
   };
 
   const onAllAMCSelectClick = (checked: boolean) => {
-    setAMCList(
-      (pre) =>
-        pre?.map((x) => ({
-          ...x,
-          isChecked: checked,
-        }))
-    );
+    setAMCList((pre: any) => {
+      const temp = pre?.map((x: any) => ({
+        ...x,
+        isChecked: checked,
+      }));
+      if (checked) {
+        localSelectedAmcList = temp;
+        setSelecteedAMCCount(getSelectedListCount(temp));
+      } else {
+        localSelectedAmcList = [];
+        setSelecteedAMCCount(0);
+      }
+      return temp;
+    });
     isSelectAllAMC = checked;
-    setSelecteedAMCCount(checked ? amcList?.length || 0 : 0);
+    // setSelecteedAMCCount(checked ? amcList?.length || 0 : 0);
     changeAMCAllSelectCheckbox();
   };
 
@@ -731,7 +785,22 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
   const getSelectedListCount = (list?: Array<ArrayProps>) => {
     const selectedList = list?.filter((x) => x.isChecked);
     if (selectedList !== undefined) {
-      return selectedList.length;
+      const mergedArray = [
+        ...selectedList.map((item: any) => {
+          const localItem = localSelectedAmcList.find(
+            (local: any) => local.id === item.id
+          );
+          return {
+            ...item,
+            ...(localItem ? { ...localItem } : {}),
+          };
+        }),
+        ...localSelectedAmcList.filter(
+          (local: any) => !selectedList.some((item) => item.id === local.id)
+        ),
+      ];
+      localSelectedAmcList = mergedArray;
+      return localSelectedAmcList.length; //selectedList.length;
     } else {
       return 0;
     }
@@ -826,11 +895,13 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
 
   const onMultipleTerminateAMCClick = () => {
     if (selectedAMCCount > 0) {
-      const selectedList: any = amcList?.filter(
+      const selectedList: any = localSelectedAmcList?.filter(
+        //amcList?.filter(
         (x: any) => x.isChecked && x.terminated_date == null
       );
       if (selectedList.length > 0) {
         setAMCActionModal(true);
+        setViewSelectedDevice(false);
         setMultiSelectList(selectedList);
       } else {
         showToast({
@@ -848,14 +919,31 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
     }
   };
 
+  const onCloseSaveMultipleAMC = (isRefech?: boolean) => {
+    if (isRefech) {
+      clearAllState(isRefech);
+    } else {
+      setStartAMCModal(false);
+      setRenewAMC(false);
+      setViewSelectedDevice(false);
+      setAMCActionModal(false);
+    }
+  };
+
   const onAMCActionModalClose = (isFetch?: boolean) => {
-    clearAllState(isFetch);
+    if (isFetch) {
+      clearAllState(isFetch);
+    } else {
+      setAMCActionModal(false);
+      setViewSelectedDevice(false);
+      setStartAMCModal(false);
+    }
   };
 
   const onViewSelectedDevice = () => {
     if (selectedAMCCount > 0) {
       setViewSelectedDevice(true);
-      const selectedList: any = amcList?.filter((x: any) => x.isChecked);
+      const selectedList: any = localSelectedAmcList; //amcList?.filter((x: any) => x.isChecked);
       setAMCActionModal(true);
       setMultiSelectList(selectedList);
     }
@@ -890,6 +978,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
           }))
       );
     }
+    localSelectedAmcList = [];
   };
 
   const deviceListColumn = [
@@ -916,7 +1005,21 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
       ),
     },
     { accessorKey: 'id', header: 'Device Id' },
-    { accessorKey: 'name', header: 'Device Name' },
+    {
+      accessorKey: 'name',
+      header: 'Device Name',
+      render: (item: any) => (
+        <div>
+          <span className='test12'>{item?.name}</span>
+          {item?.units?.map((unit: any, index: number) => (
+            <div key={index}>
+              <span>{`(${unit?.machine_model?.model_number || ''} - `}</span>
+              <span>{`${unit?.serial_number || ''})`}</span>
+            </div>
+          ))}
+        </div>
+      ),
+    },
     {
       accessorKey: 'branch',
       header: 'Branch',
@@ -960,9 +1063,9 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
   );
 
   return (
-    <div className='flex h-[calc(100%-65px)] flex-grow flex-col p-6 md:p-5'>
-      <div className='flex h-full flex-col gap-5'>
-        <div className='grid w-full grid-cols-1 gap-5 rounded-md bg-white p-5  lg:grid-cols-8 lg:gap-8'>
+    <div className='flex flex-grow flex-col p-6 md:p-5'>
+      <div className='flex h-full flex-col gap-3'>
+        <div className='grid w-full grid-cols-1 gap-3 rounded-md bg-white p-3  lg:grid-cols-8'>
           <div className='lg:col-span-2'>
             <InputField
               type='text'
@@ -970,7 +1073,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
               value={search}
               onChange={searchChangeHandler}
             />
-            <div className='mt-6'>
+            <div className='mt-4'>
               <CheckboxItem
                 id='active'
                 checked={filter.active == 1}
@@ -998,7 +1101,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
               onChange={amcPlanSearchChangeHandler}
               // onChange={(e) => inputChangeHandler('searchAmcPlan', e)}
             />
-            <div className='mt-6'>
+            <div className='mt-4'>
               <CheckboxItem
                 id='inactiveAMC'
                 checked={filter.inactiveAMC == 1}
@@ -1038,7 +1141,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
                 value={filter?.selectedBranch}
               />
             </div>
-            <div className='mt-6'>
+            <div className='mt-4'>
               <DatepickerComponent
                 label=''
                 placeholderText='Enter Start Date to Search'
@@ -1067,7 +1170,7 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
                 value={filter?.selectedDevice}
               />
             </div>
-            <div className='mt-6'>
+            <div className='mt-4'>
               <DatepickerComponent
                 label=''
                 placeholderText='Enter End Date to Search'
@@ -1131,16 +1234,24 @@ const AmcDetails = ({ apiBaseUrl, customerData }: any) => {
         <StartAMCDialog
           open={startAMCModal}
           onClose={(isRefech, item) => {
-            isRenewAMC
-              ? onCloseSaveMultipleAMC(isRefech)
-              : onStartAMCClick(isRefech, item);
-            setFilter((pre) => ({
-              ...pre,
-              active: 1,
-              inactiveAMC: 1,
-              archive: 2,
-              futureAMC: 2,
-            }));
+            if (isRenewAMC) {
+              onCloseSaveMultipleAMC(isRefech);
+            } else {
+              if (isRefech) {
+                onStartAMCClick(isRefech, item);
+              } else {
+                onCloseSaveMultipleAMC(isRefech);
+              }
+            }
+            if (isRefech) {
+              setFilter((pre) => ({
+                ...pre,
+                active: 1,
+                inactiveAMC: 1,
+                archive: 2,
+                futureAMC: 2,
+              }));
+            }
           }}
           startNewAMCDevices={startNewAMCDevices}
           isRenewAMC={isRenewAMC}

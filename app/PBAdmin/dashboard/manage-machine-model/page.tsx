@@ -3,11 +3,18 @@ import Breadcrumb from '@/components/Breadcrumb';
 import React, { useContext, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { IconAddLine, IconEdit, IconLoading, IconMinus } from '@/utils/Icons';
+import {
+  IIcon201Upload3,
+  Icon200Download3,
+  IconAddLine,
+  IconEdit,
+  IconLoading,
+  IconMinus,
+} from '@/utils/Icons';
 import TableComponent from '@/components/Table';
-import { API_ENDPOINTS } from '@/utils/apiConfig';
+import { ADMIN, API_ENDPOINTS } from '@/utils/apiConfig';
 import { useMutation } from 'react-query';
-import { apiCall } from '@/hooks/api';
+import { apiCall, downloadFile } from '@/hooks/api';
 import { validateForm } from '@/utils/FormValidationRules';
 import {
   HELPERSDATA,
@@ -21,6 +28,8 @@ import AddMachineModel from './AddMachineModel';
 import { DataContext } from '@/context/dataProvider';
 import SearchInput from '@/components/SearchInput';
 import Loader from '@/components/Loader';
+import InputField from '@/components/InputField';
+import { ERROR_MESSAGES } from '@/utils/ValidationUtils';
 
 interface ManageMachineModelColumneProps {
   accessorKey: string;
@@ -53,6 +62,14 @@ const ManageMachineModel = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [isSampleLoading, setSampleLoading] = useState(false);
+  const [inputKey, setInputKey] = useState(1);
+  const [isUploadLoading, setUploadLoading] = useState(false);
+  const [file, setFile] = useState<File | null>();
+  const [importInfoModel, setImportInfoModel] = useState<any>({
+    show: false,
+    info: null,
+  });
   const apiAction = useMutation(apiCall);
   const { state } = useContext(DataContext);
 
@@ -320,6 +337,83 @@ const ManageMachineModel = () => {
   const handleAddClick = () => {
     setShowModal(true);
   };
+
+  const handleFileInputChange = (e: any) => {
+    const { files } = e.target;
+    if (files && files.length > 0) {
+      setFile(files[0]);
+      setErrors({ file: '' });
+    }
+  };
+
+  const onUpload = () => {
+    if (file?.name != undefined) {
+      uploadFile();
+    } else {
+      setErrors((prev) => ({
+        ...prev,
+        file: `File ${ERROR_MESSAGES.required}`,
+      }));
+    }
+  };
+
+  const onDownloadSample = async () => {
+    setSampleLoading(true);
+    let endpoint: string = `${ADMIN}export-samples?export_type=4`;
+    try {
+      const blob: Blob = await downloadFile(endpoint);
+      const blobUrl: string = window.URL.createObjectURL(blob);
+      const a: HTMLAnchorElement = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `machine_model.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Failed to download service report:', error);
+      // Handle error gracefully (e.g., display a message to the user)
+    } finally {
+      setSampleLoading(false);
+    }
+  };
+
+  const uploadFile = async () => {
+    setUploadLoading(true);
+    let url = API_ENDPOINTS.IMPORT_MACHINE_MODEL;
+    const formData = new FormData();
+    formData.append('file', file!);
+
+    const request = {
+      endpoint: url,
+      method: 'POST',
+      body: formData,
+      isFormData: true,
+    };
+    try {
+      const { isError, data } = await apiAction.mutateAsync(request);
+      if (!isError) {
+        setFile(null);
+        setInputKey((prev) => prev + 1);
+        if (data?.duplicate_records?.length > 0 || data?.errors?.length > 0) {
+          setImportInfoModel({
+            show: true,
+            info: data,
+          });
+        }
+        if (page === 1) {
+          fetchList();
+        } else {
+          setPage(1);
+        }
+      }
+    } catch (e) {
+      console.log('===> error', e?.toString());
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   const columns: ManageMachineModelColumneProps[] = [
     {
       accessorKey: 'brand',
@@ -406,11 +500,36 @@ const ManageMachineModel = () => {
       <div className='flex h-full flex-col gap-5 bg-white p-5'>
         <Breadcrumb />
 
-        <div className='grid w-full gap-5 lg:grid-cols-5'>
-          <div className='lg:col-span-4'>
+        <div className='grid w-full grid-flow-col gap-5 xl:auto-cols-fr'>
+          <div className=''>
             <SearchInput value={searchTerm} onChange={onSearch} />
           </div>
-          <div className='col-span-1 flex gap-5'>
+          <div className=' flex items-center gap-5'>
+            <InputField
+              type='file'
+              className='w-full'
+              key={inputKey}
+              onChange={handleFileInputChange}
+              error={errors?.file || ''}
+            />
+
+            <Button
+              icon={isUploadLoading ? <IconLoading /> : <IIcon201Upload3 />}
+              disabled={isUploadLoading || isSampleLoading}
+              onClick={onUpload}
+            >
+              Upload
+            </Button>
+          </div>
+          <div className='flex gap-5'>
+            <Button
+              icon={isSampleLoading ? <IconLoading /> : <Icon200Download3 />}
+              disabled={isUploadLoading || isSampleLoading}
+              onClick={onDownloadSample}
+              className='w-full'
+            >
+              Download Sample
+            </Button>
             <Button
               variant={'secondary'}
               className='w-full'
@@ -469,6 +588,45 @@ const ManageMachineModel = () => {
         >
           {getActiveDeactiveMsg(selectedItem?.is_active, 'Record')}
         </ConfirmationDialog>
+        {importInfoModel?.show && (
+          <ConfirmationDialog
+            isOpen={importInfoModel.show}
+            onClose={() => {
+              setImportInfoModel({
+                show: false,
+                info: null,
+              });
+            }}
+            ClassName='min-w-[45%]'
+          >
+            We have found some issues while importing.
+            <br />
+            <br />
+            <div className='text-left text-base font-medium'>
+              <span className='font-bold'>Duplicate Records:</span>
+              {importInfoModel?.info?.duplicate_records?.map(
+                (dupliicate: any, index: number) => (
+                  <div key={index}>
+                    <span>{`${index + 1})  ${dupliicate}`}</span>
+                  </div>
+                )
+              )}
+              <br />
+              <span className='font-bold'>Rows with Errors:</span>
+              {importInfoModel?.info?.errors?.map(
+                (error: any, index: number) => (
+                  <div key={index}>
+                    <span>{`${index + 1}) ${error}`}</span>
+                  </div>
+                )
+              )}
+              <div className='flex mt-4'>
+                <span className='font-semibold mr-1'>Note:</span>
+                <span>All valid records have been successfully imported.</span>
+              </div>
+            </div>
+          </ConfirmationDialog>
+        )}
       </div>
     </div>
   );

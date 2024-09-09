@@ -22,6 +22,7 @@ import moment from 'moment';
 import { PARTNER_ } from '@/utils/apiConfig';
 import { usePathname } from 'next/navigation';
 import ManageCalendar from './ManageCalendar/ManageCalendar';
+import { Button } from './ui/button';
 
 interface FormData {
   [key: string]: any;
@@ -41,6 +42,7 @@ const AssignTechniciansDialog = ({
   selectedComplaint,
   selectedComplaintIds,
   preventiveServices,
+  afterSave,
 }: any) => {
   const pathname = usePathname();
   const basePath = getBaseUrl(pathname);
@@ -66,6 +68,8 @@ const AssignTechniciansDialog = ({
     useState<FormData>();
   const [openDialog, setOpenDialog] = useState(false);
   const [technicianList, setTechnicianList] = useState<any>([]);
+  const [showMultiTechAssignDialog, setMultiTechAssignDialog] = useState(false);
+  const [yesLoader, setYesLoader] = useState(false);
 
   useEffect(() => {
     fetchTechnician();
@@ -159,18 +163,39 @@ const AssignTechniciansDialog = ({
   };
 
   const handleSave = async () => {
-    try {
-      // Start the loading state
-      setLoading(true);
-      const valifationRules = [
-        {
-          field: 'technician_ids',
-          value: selectedTechnicianIds.join(','),
-          customMessage: 'Please select Technician',
-        },
-      ];
+    // Start the loading state
 
-      let { isError, errors } = validateForm(valifationRules);
+    const valifationRules = [
+      {
+        field: 'technician_ids',
+        value: selectedTechnicianIds.join(','),
+        customMessage: 'Please select Technician',
+      },
+    ];
+
+    let { isError, errors } = validateForm(valifationRules);
+
+    if (isError) {
+      setErrors(errors);
+    } else {
+      if (
+        selectedTechnicianIds?.length > 1 &&
+        !selectedComplaint?.isAssistant
+      ) {
+        setMultiTechAssignDialog(true);
+      } else {
+        postAssignTechnician();
+      }
+    }
+  };
+
+  const postAssignTechnician = async (isMultiple = false) => {
+    try {
+      if (isMultiple) {
+        setYesLoader(true);
+      } else {
+        setLoading(true);
+      }
       let assignDate = moment(selectedTechnician?.assign_date || new Date());
 
       let params = {
@@ -185,42 +210,40 @@ const AssignTechniciansDialog = ({
       }
 
       if (isPBEnterprise) {
-        params.partner_id = selectedComplaint?.customer?.partner_id;
+        params.partner_id = selectedComplaint?.device?.device_assign_partner?.partner_id;
       }
 
-      if (isError) {
-        setErrors(errors);
-      } else {
-        let apiUrl = apiBaseUrl.CUSTOMERS;
+      let apiUrl = apiBaseUrl.CUSTOMERS;
+      const technician = {
+        endpoint: apiUrl,
+        method: 'POST',
+        body: params,
+      };
 
-        const technician = {
-          endpoint: apiUrl,
-          method: 'POST',
-          body: params,
+      technician.endpoint = `${apiBaseUrl.ASSIGN_TECHNICIAN}?_method=patch`;
+
+      if (preventiveServices) {
+        technician.endpoint = `${PARTNER_}preventive-services/request`;
+      }
+
+      if (selectedComplaint?.isAssistant) {
+        technician.endpoint = `${apiUrl}/${selectedComplaint.customer_id}/request/${selectedComplaint?.id}/assign-technician?_method=patch`;
+        technician.body = {
+          technician_ids: selectedTechnicianIds,
         };
-
-        technician.endpoint = `${apiBaseUrl.ASSIGN_TECHNICIAN}?_method=patch`;
-
-        if (preventiveServices) {
-          technician.endpoint = `${PARTNER_}preventive-services/request`;
+      }
+      const response = await apiAction.mutateAsync(technician);
+      setMultiTechAssignDialog(false);
+      if (response?.isError) {
+        setErrors(response.errors);
+      } else {
+        setErrors({});
+        setselectedTechnician({});
+        onClose();
+        if (afterSave) {
+          afterSave?.();
         }
-
-        if (selectedComplaint?.isAssistant) {
-          technician.endpoint = `${apiUrl}/${selectedComplaint.customer_id}/request/${selectedComplaint?.id}/assign-technician?_method=patch`;
-          technician.body = {
-            technician_ids: selectedTechnicianIds,
-          };
-        }
-        const response = await apiAction.mutateAsync(technician);
-
-        if (response?.isError) {
-          setErrors(response.errors);
-        } else {
-          setErrors({});
-          setselectedTechnician({});
-          onClose();
-          setData({ [REFRESHCOMPLAINTLIST]: new Date().toISOString() });
-        }
+        setData({ [REFRESHCOMPLAINTLIST]: new Date().toISOString() });
       }
     } catch (error: any) {
       // Show an alert with the error message
@@ -232,7 +255,16 @@ const AssignTechniciansDialog = ({
     } finally {
       // Stop the loading state regardless of success or failure
       setLoading(false);
+      setYesLoader(false);
     }
+  };
+
+  const onCloseMultiTechAssignDialog = () => {
+    setMultiTechAssignDialog(false);
+  };
+
+  const onAssignMultipleTechAssis = () => {
+    postAssignTechnician(true);
   };
 
   const columns: TechnicianColumn[] = [
@@ -317,7 +349,7 @@ const AssignTechniciansDialog = ({
               showTimeSelect
               className='grid grid-cols-2 items-center gap-3'
               label='Assign Date'
-              minDate={new Date()}
+              // minDate={new Date()}
               dateFormat='dd/MM/yyyy hh:mm a'
               onChange={(e) => handleInputChange('assign_date', e)}
               selectedDate={selectedDateWithOffset}
@@ -342,6 +374,58 @@ const AssignTechniciansDialog = ({
             setOpenDialog(false);
           }}
         />
+      )}
+
+      {showMultiTechAssignDialog && (
+        <MyDialog
+          open={showMultiTechAssignDialog}
+          onClose={onCloseMultiTechAssignDialog}
+          title='Assign Technicians'
+          ClassName='max-h-[90%]'
+          isShowClose={false}
+        >
+          <div className=' p-4'>
+            <div className='p-1'>
+              <span className='font-semibold'>{`${filteredTechnicianData?.find(
+                (x: any) => x.id == selectedTechnicianIds[0]
+              )?.name}`}</span>{' '}
+              is assigned as Technician
+            </div>
+            <div className='p-1'>
+              <span className='font-semibold'>{`${selectedTechnicianIds
+                .slice(1)
+                .map(
+                  (id: any) =>
+                    filteredTechnicianData?.find((x: any) => x.id == id)?.name
+                )
+                .filter((name: any) => name)
+                .join(', ')}`}</span>{' '}
+              is assigned as Assistant
+            </div>
+            <div className='flex justify-between pt-4'>
+              <span className='font-semibold'>Are you sure?</span>
+              <div className='flex gap-2'>
+                <Button
+                  size='sm'
+                  variant={'blue'}
+                  disabled={yesLoader}
+                  icon={yesLoader ? <IconLoading /> : null}
+                  onClick={onAssignMultipleTechAssis}
+                >
+                  Yes
+                </Button>
+                <Button
+                  size='sm'
+                  disabled={yesLoader}
+                  variant={'yellow'}
+                  onClick={() => setMultiTechAssignDialog(false)}
+                >
+                  No
+                </Button>
+              </div>
+            </div>
+          </div>
+        </MyDialog>
       )}
     </MyDialog>
   );

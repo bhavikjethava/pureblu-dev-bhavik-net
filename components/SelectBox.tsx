@@ -63,7 +63,9 @@ const SelectBox = <T,>({
   }
 
   const idExists = useMemo(() => {
-    return options.some((option: any) => option?.[optionKey] === DEFAULT_SELECTION);
+    return options.some(
+      (option: any) => option?.[optionKey] === DEFAULT_SELECTION
+    );
   }, [options]);
 
   return (
@@ -74,7 +76,7 @@ const SelectBox = <T,>({
           {isRequired && <span className='text-pbRed'>*</span>}
         </div>
       ) : null}
-      <div className='font-medium select-wrapper'>
+      <div className='select-wrapper font-medium'>
         {/* <Select
           options={options}
           menuPortalTarget={document?.body}
@@ -99,13 +101,14 @@ const SelectBox = <T,>({
         /> */}
         {/* <label>{JSON.stringify(value)}</label> */}
         <select
+          disabled={disabled}
           className={`custom-select w-full font-medium ${heightClass}`}
           onChange={handleChange}
           defaultValue={DEFAULT_SELECTION}
-          value={value === "" ? DEFAULT_SELECTION : value}
+          value={value === '' ? DEFAULT_SELECTION : value}
         >
           {idExists ? null : (
-            <option value={DEFAULT_SELECTION} disabled>
+            <option value={DEFAULT_SELECTION}>
               {placeholder ? placeholder : 'Select...'}
             </option>
           )}

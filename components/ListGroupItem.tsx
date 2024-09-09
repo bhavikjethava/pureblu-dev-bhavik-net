@@ -17,16 +17,16 @@ const ListGroupItem: React.FC<ListGroupItemProps> = ({
   className,
   loading = false,
 }) => (
-  <div className={`flex flex-col py-4 ${className}`}>
+  <div className={`flex flex-col py-2 ${className}`}>
     {loading ? (
       <>
-        <dt className='mb-1 font-semibold'>{label}</dt>
+        <dt className='mb-1 font-bold uppercase'>{label}</dt>
         <Skeleton className='h-5 w-3/4' />{' '}
       </>
     ) : label && value ? (
       <>
-        <dt className='mb-1 font-semibold'>{label}</dt>
-        <dd className='font-medium'>{value}</dd>
+        <dt className='mb-1 font-bold uppercase'>{label}</dt>
+        <dd className='font-normal'>{value}</dd>
       </>
     ) : (
       children

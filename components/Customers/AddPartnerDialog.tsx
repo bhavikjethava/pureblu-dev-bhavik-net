@@ -68,6 +68,7 @@ const AddPartnerDialog: FC<AddPartnerDialogProps> = ({
   const [customerInfo, setCustomerInfo] = useState<DataProps>({});
   const [partnerInfo, setPartnerInfo] = useState<DataProps>({});
   const [selectedPartner, setSelectedPartner] = useState<DataProps>({});
+  const [partnerList, setPartnerList] = useState([]);
 
   const apiAction = useMutation(apiCall);
   useEffect(() => {
@@ -78,6 +79,14 @@ const AddPartnerDialog: FC<AddPartnerDialogProps> = ({
       fetchPartnerInfo(customer?.id);
     }
   }, [state?.[CUSTOMER]]);
+
+  useEffect(() => {
+    const _partnerList: any = state?.[PARTNERS];
+    if (_partnerList?.findIndex((x: any) => x.id == 0) < 0) {
+      _partnerList.unshift({ id: 0, name: 'No partner' });
+    }
+    setPartnerList(_partnerList);
+  }, [state?.[PARTNERS]]);
 
   const fetchPartnerInfo = async (customerId: number) => {
     try {
@@ -118,7 +127,7 @@ const AddPartnerDialog: FC<AddPartnerDialogProps> = ({
         endpoint: `${apiBaseUrl.CUSTOMERS}/${customerInfo?.id}/assign-full-partner`,
         method: 'POST',
         body: {
-          partner_id: id,
+          ...id == 0 ? {remove_partner:1 } : {partner_id: id},
         },
       };
       const { data } = await apiAction.mutateAsync(assignPartner);
@@ -154,7 +163,7 @@ const AddPartnerDialog: FC<AddPartnerDialogProps> = ({
         <SelectBox
           label='Partner'
           isRequired={true}
-          options={state?.[PARTNERS]}
+          options={partnerList}
           value={selectedPartner?.id}
           onChange={(e) => onPartnerChangeHandler('id', e)}
           error={errors?.id}

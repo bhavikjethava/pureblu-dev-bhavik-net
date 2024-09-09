@@ -61,7 +61,9 @@ export const apiCall = async ({
       if (window) {
         const basePath = getBaseUrl(window.location.pathname);
         await handleLogout(basePath);
-        window.location.replace(`/${basePath}/login`);
+        setTimeout(() => {
+          window.location.replace(`/${basePath}/login`);
+        }, 500);
       }
     }
     showToast({

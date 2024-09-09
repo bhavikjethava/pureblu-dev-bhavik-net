@@ -45,7 +45,7 @@ const AddressField: React.FC<AddressFieldProps> = ({
   }, [state]);
   return (
     <>
-      <dt className='mb-1  font-semibold'>{label}</dt>
+      <dt className='mb-1  font-bold uppercase'>{label}</dt>
       <div className='flex flex-col gap-1 capitalize'>
         {loading ? (
           // Render skeleton loader when loading is true
@@ -133,15 +133,13 @@ const AddressField: React.FC<AddressFieldProps> = ({
           </>
         ) : (
           <>
-            {selectedformData?.address_1 && (
-              <p className='font-medium'>{selectedformData?.address_1},</p>
-            )}
-            {selectedformData?.address_2 && (
-              <p className='font-medium'>{selectedformData?.address_2},</p>
-            )}
-            {selectedformData?.address_3 && (
-              <p className='font-medium'>{selectedformData?.address_3},</p>
-            )}
+            {(selectedformData?.address_1 || selectedformData?.address_2 || selectedformData?.address_3) && (
+                <p className='font-medium'>
+                  {[selectedformData?.address_1, selectedformData?.address_2, selectedformData?.address_3]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              )}
              {selectedformData?.locality && (
               <p className='font-medium'>{selectedformData?.locality},</p>
             )}

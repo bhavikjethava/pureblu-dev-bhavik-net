@@ -74,11 +74,12 @@ const ImportInfo: FC<ImportInfoPros> = ({ type, callback }) => {
   };
 
   const onUpload = () => {
-    if (selectedCustomer?.customer_id == undefined) {
+    if (selectedCustomer?.customer_id == undefined && type === 'devices') {
       setErrors((prev) => ({
         ...prev,
         customer_id: `Please select a Customer`,
       }));
+      return;
     }
     if (file?.name != undefined) {
       uploadFile();
@@ -130,8 +131,10 @@ const ImportInfo: FC<ImportInfoPros> = ({ type, callback }) => {
     setLoading(true);
     let url = API_ENDPOINTS_PARTNER.IMPORT_CUSTOMERS;
     switch (type) {
-      case 'customers': {   
-        url = isPBEnterprise ? API_ENDPOINTS.IMPORT_CUSTOMERS : API_ENDPOINTS_PARTNER.IMPORT_CUSTOMERS;
+      case 'customers': {
+        url = isPBEnterprise
+          ? API_ENDPOINTS.IMPORT_CUSTOMERS
+          : API_ENDPOINTS_PARTNER.IMPORT_CUSTOMERS;
         break;
       }
       case 'technicians': {
@@ -139,11 +142,10 @@ const ImportInfo: FC<ImportInfoPros> = ({ type, callback }) => {
         break;
       }
       case 'devices': {
-        url = isPBEnterprise ? API_ENDPOINTS.IMPORT_DEVICES : API_ENDPOINTS_PARTNER.IMPORT_DEVICES
-        url =  url.replace(
-          '{id}',
-          selectedCustomer?.customer_id
-        );
+        url = isPBEnterprise
+          ? API_ENDPOINTS.IMPORT_DEVICES
+          : API_ENDPOINTS_PARTNER.IMPORT_DEVICES;
+        url = url.replace('{id}', selectedCustomer?.customer_id);
         break;
       }
     }

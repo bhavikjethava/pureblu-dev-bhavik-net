@@ -22,6 +22,7 @@ import ROUTES, {
   REFRESHCOMPLAINTLIST,
   REFRESHDIVELIST,
   YYYYMMDD,
+  getAMCColor,
   getBaseUrl,
   updateArray,
 } from '@/utils/utils';
@@ -162,7 +163,8 @@ const AddComplaint: FC<AddComplaint> = ({
       removeKeys({ ...device }, keysToRemove)
     );
 
-    setFilterDeviceList([...optimizDeviceList]);
+    // setFilterDeviceList([...optimizDeviceList]);
+    setFilterDeviceList([...sortDeviceBasedOnAMC(optimizDeviceList)]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state?.[DEVICELIST]]);
 
@@ -182,6 +184,21 @@ const AddComplaint: FC<AddComplaint> = ({
     }
     return obj;
   };
+
+  const sortDeviceBasedOnAMC = (optimizDeviceList: any) => {
+   return optimizDeviceList?.sort((a: any, b: any) => {
+      if (a.amc_registration === null && b.amc_registration === null) {
+        return 0;
+      }
+      if (a.amc_registration === null) {
+        return -1;
+      }
+      if (b.amc_registration === null) {
+        return 1;
+      }
+      return a.amc_registration.amc_status - b.amc_registration.amc_status;
+    });
+  }
 
   const onChangeHandler = (field: string, value: string | number | Date) => {
     setFormData((pre) => ({
@@ -262,7 +279,8 @@ const AddComplaint: FC<AddComplaint> = ({
           .includes(search?.search.toLowerCase())
       );
     });
-    setFilterDeviceList(_filterDevices);
+    // setFilterDeviceList(_filterDevices);
+    setFilterDeviceList(sortDeviceBasedOnAMC(_filterDevices));
   };
 
   const onSave = async () => {
@@ -297,6 +315,7 @@ const AddComplaint: FC<AddComplaint> = ({
       let { isError, errors } = validateForm(valifationRules);
       if (isError) {
         setErrors(errors);
+        return;
       }
       let body = {
         request_device_type: 'new',
@@ -400,7 +419,7 @@ const AddComplaint: FC<AddComplaint> = ({
       accessorKey: 'name',
       header: 'Device Name',
       render: (item: any) => (
-        <span>
+        <span className={getAMCColor(item?.amc_registration || {})}>
           {item.id} - {item.name}
         </span>
       ),
@@ -582,14 +601,16 @@ const AddComplaint: FC<AddComplaint> = ({
                 />
                 <ListGroupItem>
                   <EditableField
-                    label='Name of Customers'
+                    label='Customer Name'
                     value={customer?.name || ''}
+                     labelClass='uppercase'
                   />
                 </ListGroupItem>
                 <ListGroupItem>
                   <EditableField
                     label='Contact Number'
                     value={customer?.phone || ''}
+                     labelClass='uppercase'
                   />
                 </ListGroupItem>
                 <ListGroupItem>
@@ -658,7 +679,7 @@ const AddComplaint: FC<AddComplaint> = ({
                 />
                 <DatepickerComponent
                   label='Assign Date'
-                  minDate={new Date()}
+                  // minDate={new Date()}
                   selectedDate={formData.assign_date}
                   onChange={(date) =>
                     onChangeHandler('assign_date', date || new Date())

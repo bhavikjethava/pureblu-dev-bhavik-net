@@ -239,7 +239,7 @@ const AmcInfoDialog: FC<AmcInfoDialogProps> = ({
                 </div>
                 <div className='grid grid-cols-2 gap-4 py-3'>
                   <div className='grid grid-cols-2 gap-4'>
-                    <div className='font-semibold'>AMC Description :</div>
+                    <div className='font-bold uppercase'>AMC Description :</div>
                     <div className='uppercase'>
                       {amcInfo?.amc_plan?.amc_description}
                     </div>
@@ -308,93 +308,99 @@ const AmcInfoDialog: FC<AmcInfoDialogProps> = ({
               </div>
             </CardContent>
           </Card>
-
-          <Card className=''>
-            <CardHeader className='bg-primary px-4 py-2 text-primary-foreground'>
-              <CardTitle className='text-lg font-normal'>
-                Service Dates
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='p-4'>
-              <div className='rounded border-2'>
-                <div className='grid divide-y-2'>
-                  <div className='grid grid-cols-12 gap-4 divide-x-2'>
-                    <div className='col-span-2 p-3  font-semibold'>#</div>
-                    <div className='col-span-3 p-3 font-semibold'>
-                      Device Name{' '}
-                    </div>
-                    <div className='col-span-7 p-3 font-semibold'>
-                      Service Dates
-                    </div>
-                  </div>
-                  <div className='grid grid-cols-12 gap-4 divide-x-2'>
-                    <div className='col-span-2 p-3'>{amcInfo?.device?.id}</div>
-                    <div className='col-span-3 p-3'>
-                      {amcInfo?.device?.name}
-                    </div>
-                    <div className='col-span-7 grid grid-cols-3 gap-3 p-3'>
-                      {selectedItem?.map((item: any, index: number) => (
-                        <div key={index}>
-                          <div className='mb-2 flex items-center gap-2'>
-                            <span
-                              className={`h-3 w-3 rounded-full`}
-                              style={{
-                                backgroundColor: getAMCServiceStatus(
-                                  item?.request
-                                ),
-                              }}
-                            ></span>
-                            {moment(item?.service_date).format(YYYYMMDD)}
-                          </div>
-                          {!isPBEenterprise && (
-                            <SelectBox
-                              isRequired
-                              disabled={isEnterpriseCustomer == 1}
-                              label=''
-                              options={helperData?.data?.amc_service_type}
-                              value={item?.amc_service_type_id || ''}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  item.id,
-                                  'amc_service_type_id',
-                                  e
-                                )
-                              }
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {isPBEenterprise || isEnterpriseCustomer == 1 ? null : (
+          {!amcInfo?.terminated_date && (
+            <Card className=''>
+              <CardHeader className='bg-primary px-4 py-2 text-primary-foreground'>
+                <CardTitle className='text-lg font-normal'>
+                  Service Dates
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='p-4'>
+                <div className='rounded border-2'>
+                  <div className='grid divide-y-2'>
                     <div className='grid grid-cols-12 gap-4 divide-x-2'>
-                      <div className='col-span-2 p-3'></div>
-                      <div className='col-span-3 p-3'></div>
-                      <div className='col-span-7 col-start-6 flex justify-center gap-4 p-3'>
-                        <Button
-                          size={'sm'}
-                          className='min-w-[85px]'
-                          onClick={onSaveServiceType}
-                          icon={isLoading && <IconLoading />}
-                          disabled={isLoading}
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          size={'sm'}
-                          className='min-w-[85px]'
-                          variant={'outline'}
-                          onClick={onClose}
-                        >
-                          cancel
-                        </Button>
+                      <div className='col-span-2 p-3  font-semibold'>#</div>
+                      <div className='col-span-3 p-3 font-semibold'>
+                        Device Name{' '}
+                      </div>
+                      <div className='col-span-7 p-3 font-semibold'>
+                        Service Dates
                       </div>
                     </div>
-                  )}
+                    <div className='grid grid-cols-12 gap-4 divide-x-2'>
+                      <div className='col-span-2 p-3'>
+                        {amcInfo?.device?.id}
+                      </div>
+                      <div className='col-span-3 p-3'>
+                        {amcInfo?.device?.name}
+                      </div>
+                      <div className='col-span-7 grid grid-cols-3 gap-3 p-3'>
+                        {selectedItem?.map((item: any, index: number) => (
+                          <div key={index}>
+                            <div className='mb-2 flex items-center gap-2'>
+                              <span
+                                className={`h-3 w-3 rounded-full`}
+                                style={{
+                                  backgroundColor: getAMCServiceStatus(
+                                    item?.request
+                                  ),
+                                }}
+                              ></span>
+                              {moment(item?.service_date).format(YYYYMMDD)}
+                            </div>
+                            {/* {!isPBEenterprise && ( */}
+                              <SelectBox
+                                isRequired
+                                disabled={
+                                  // isEnterpriseCustomer == 1 ||
+                                  item?.request != null
+                                }
+                                label=''
+                                options={helperData?.data?.amc_service_type}
+                                value={item?.amc_service_type_id || ''}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    item.id,
+                                    'amc_service_type_id',
+                                    e
+                                  )
+                                }
+                              />
+                            {/* )} */}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* {isPBEenterprise || isEnterpriseCustomer == 1 ? null : ( */}
+                      <div className='grid grid-cols-12 gap-4 divide-x-2'>
+                        <div className='col-span-2 p-3'></div>
+                        <div className='col-span-3 p-3'></div>
+                        <div className='col-span-7 col-start-6 flex justify-center gap-4 p-3'>
+                          <Button
+                            size={'sm'}
+                            className='min-w-[85px]'
+                            onClick={onSaveServiceType}
+                            icon={isLoading && <IconLoading />}
+                            disabled={isLoading}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size={'sm'}
+                            className='min-w-[85px]'
+                            variant={'outline'}
+                            onClick={onClose}
+                          >
+                            cancel
+                          </Button>
+                        </div>
+                      </div>
+                    {/* )} */}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
           {hasRequest && (
             <Card className=''>
               <CardHeader className='bg-primary px-4 py-2 text-primary-foreground'>
@@ -488,10 +494,13 @@ const AmcInfoDialog: FC<AmcInfoDialogProps> = ({
                               : 'Pending'}
                           </div>
                           <div className='p-3'>
-                            {quotation.quotation && (
+                            {quotation?.quotation && (
                               <Link
                                 className='break-words font-semibold text-pbHeaderBlue'
-                                href={quotation.quotation}
+                                href={extractFileNameFromUrl(
+                                  quotation.quotation,
+                                  true
+                                )}
                                 target='_blank'
                               >
                                 {extractFileNameFromUrl(quotation.quotation)}

@@ -148,7 +148,7 @@ const ROUTES = {
   MANAGE_SETTINGS: 'manage-settings',
   RESTORE_CUSTOMER: 'restore-customer',
   ABOUT_US: 'https://pureblu.in/',
-  FAQS: 'https://pureblu.in/',
+  FAQS: 'https://s3.ap-south-1.amazonaws.com/dashboard-pureblu/uploads/faq/faq.xlsx',
   TERMS_OF_USE: 'https://pureblu.in/legal/',
   LOG_OUT: '#',
   MANAGE_CALENDAR: 'manage-calendar',
@@ -228,8 +228,10 @@ export const getStatusString = (status: any): [string, string] => {
     statusString = 'Disabled';
     className = 'var(--pbGeay)';
   } else {
-    statusString = 'Unknown';
-    className = 'unknown';
+    statusString = 'Inactive';
+    className = 'var(--pbRed)';
+    // statusString = 'Unknown';
+    // className = 'unknown';
   }
 
   return [statusString, className];
@@ -330,23 +332,27 @@ export const fetchHelperData = async (apiAction: any) => {
   }
 };
 
-export const extractFileNameFromUrl = (url: string) => {
-  // Split the URL string by '/'
+export const extractFileNameFromUrl = (
+  url: string,
+  isEcodedFile: boolean = false
+): any => {
   const parts = url.split('/');
-
-  // Get the last part of the URL which is typically the file name
-  const fileName = parts.pop();
-
+  const fileName = parts.pop() || '';
+  if (isEcodedFile) {
+    const path = parts.join('/');
+    const encodedPath = `${path}/${encodeURIComponent(fileName)}`;
+    return encodedPath;
+  }
   return fileName;
 };
 
 export const getAMCColor = (item: any) => {
-  const endDate = new Date(item.end_date);
-  const startDate = new Date(item.start_date);
-  const currentDate = new Date();
-  endDate.setHours(0, 0, 0, 0);
-  startDate.setHours(0, 0, 0, 0);
-  currentDate.setHours(0, 0, 0, 0);
+  // const endDate = new Date(item.end_date);
+  // const startDate = new Date(item.start_date);
+  // const currentDate = new Date();
+  // endDate.setHours(0, 0, 0, 0);
+  // startDate.setHours(0, 0, 0, 0);
+  // currentDate.setHours(0, 0, 0, 0);
   if (item.amc_status == undefined) {
     //if (startDate > currentDate) {
     //future

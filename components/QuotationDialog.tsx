@@ -242,7 +242,7 @@ const QuotationDialog = ({
                 type='file'
                 label='Attach Quote'
                 className='grid grid-cols-2 items-center gap-3'
-                accept='image/*'
+                // accept='image/*'
                 onChange={(e) => handleQuotationChange('quotation', e, 'file')}
                 error={errors?.quotation || ''}
               />

@@ -386,7 +386,7 @@ const MapView = () => {
               </>
             ) : null}
           </div>
-          <div className='flex justify-center px-4'>
+          <div className='flex justify-center px-4 h-full overflow-auto'>
             <TableComponent columns={columns} data={technicianList} />
           </div>
         </div>

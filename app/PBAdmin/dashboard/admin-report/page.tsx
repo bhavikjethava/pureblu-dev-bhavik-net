@@ -1,3 +1,4 @@
+'use client';
 import AdminReportList from '@/components/AdminReportList';
 import { API_ENDPOINTS, API_ENDPOINTS_PARTNER } from '@/utils/apiConfig';
 import React from 'react';

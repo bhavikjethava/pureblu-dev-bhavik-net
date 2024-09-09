@@ -125,7 +125,7 @@ const AddAdmin: React.FC<AddAdminProps> = ({
 
                 <InputField
                   type='text'
-                  isRequired
+                  // isRequired
                   label='Middle Name:'
                   value={selectedformData?.middle_name || ''}
                   onChange={(e) => handleInputChange('middle_name', e)}
@@ -179,10 +179,7 @@ const AddAdmin: React.FC<AddAdminProps> = ({
                   : helperData?.admin_user_role
               }
               selectedformData={selectedformData}
-              value={
-                (selectedformData?.roles && selectedformData?.roles[0]?.id) ||
-                '0'
-              }
+              value={selectedformData?.role_id}
               onChange={(e) => handleInputChange('role_id', Number(e))}
               error={formErrors?.role_id || ''}
             />
@@ -220,6 +217,7 @@ const AddAdmin: React.FC<AddAdminProps> = ({
               onChange={(e) => handleStateChage('state_id', Number(e))}
               error={formErrors?.state_id || ''}
             />
+
 
             <SelectBox
               label='City'
